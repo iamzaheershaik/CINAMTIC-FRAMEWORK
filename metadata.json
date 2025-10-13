@@ -1,0 +1,5 @@
+{
+  "name": "Cinematic AI Video Prompt Generator",
+  "description": "Generate detailed, high-quality AI video prompts from a simple subject using the advanced CINEMATIC framework. Perfect for creators using Veo, Sora, Runway, and other AI video models.",
+  "requestFramePermissions": []
+}
