@@ -1,20 +1,47 @@
-
 <main class="min-h-screen bg-gray-900 text-gray-100 flex flex-col items-center p-4 sm:p-8 font-sans">
   <div class="w-full max-w-4xl mx-auto">
     
     <!-- Header -->
     <header class="text-center mb-8">
       <h1 class="text-4xl sm:text-5xl font-bold text-white mb-2">
-        Cinematic AI Prompt Generator
+        AI Prompt Generator
       </h1>
-      <p class="text-lg text-gray-400">
-        Transform simple ideas into detailed video prompts with the CINEMATIC framework.
-      </p>
+      @if (activeFramework() === 'cinematic') {
+        <p class="text-lg text-gray-400">
+          Transform simple ideas into detailed video prompts with the CINEMATIC framework.
+        </p>
+      } @else {
+        <p class="text-lg text-gray-400">
+          Craft revolutionary AI animation prompts with the ARTICULATED framework.
+        </p>
+      }
     </header>
+
+    <!-- Framework Tabs -->
+    <div class="mb-8 flex justify-center border-b border-gray-700">
+      <button 
+        (click)="selectFramework('cinematic')"
+        class="py-4 px-6 block hover:text-purple-300 focus:outline-none border-b-2 font-medium transition duration-200"
+        [class.text-purple-400]="activeFramework() === 'cinematic'"
+        [class.border-purple-400]="activeFramework() === 'cinematic'"
+        [class.text-gray-400]="activeFramework() !== 'cinematic'"
+        [class.border-transparent]="activeFramework() !== 'cinematic'">
+        CINEMATIC Framework
+      </button>
+      <button 
+        (click)="selectFramework('articulated')"
+        class="py-4 px-6 block hover:text-purple-300 focus:outline-none border-b-2 font-medium transition duration-200"
+        [class.text-purple-400]="activeFramework() === 'articulated'"
+        [class.border-purple-400]="activeFramework() === 'articulated'"
+        [class.text-gray-400]="activeFramework() !== 'articulated'"
+        [class.border-transparent]="activeFramework() !== 'articulated'">
+        ARTICULATED Framework
+      </button>
+    </div>
 
     <!-- Input Section -->
     <div class="mb-8 p-6 bg-gray-800/50 rounded-xl border border-gray-700 shadow-lg">
-      <label for="subject" class="block text-lg font-medium text-purple-300 mb-3">Enter your video subject</label>
+      <label for="subject" class="block text-lg font-medium text-purple-300 mb-3">Enter your video or animation subject</label>
       <div class="flex flex-col sm:flex-row gap-4">
         <input 
           id="subject"
@@ -22,7 +49,7 @@
           [value]="subject()"
           (input)="updateSubject($event)"
           (keydown.enter)="onGenerate()"
-          placeholder="e.g., a futuristic city at sunrise, a chef preparing a complex dish..."
+          placeholder="e.g., a futuristic city at sunrise, a cat discovering magic..."
           class="flex-grow w-full p-4 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition duration-200"
         />
         <button 
@@ -66,7 +93,13 @@
         <div class="bg-gray-800/50 rounded-xl border border-gray-700 shadow-lg relative">
           <div class="p-6 sm:p-8">
             <div class="flex justify-between items-center mb-6">
-               <h2 class="text-2xl font-bold text-white">Your Cinematic Prompt</h2>
+               <h2 class="text-2xl font-bold text-white">
+                @if(activeFramework() === 'cinematic') {
+                  Your Cinematic Prompt
+                } @else {
+                  Your Articulated Animation Prompt
+                }
+               </h2>
                <button (click)="copyToClipboard()" 
                 class="px-4 py-2 bg-gray-700 text-gray-300 font-semibold rounded-lg hover:bg-gray-600 transition duration-200 text-sm">
                   {{ copyButtonText() }}

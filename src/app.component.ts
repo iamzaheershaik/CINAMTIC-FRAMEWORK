@@ -1,4 +1,3 @@
-
 import { Component, ChangeDetectionStrategy, signal, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { GeminiService, PromptSection } from './services/gemini.service';
@@ -12,6 +11,7 @@ import { GeminiService, PromptSection } from './services/gemini.service';
 export class AppComponent {
   private readonly geminiService = inject(GeminiService);
 
+  activeFramework = signal<'cinematic' | 'articulated'>('cinematic');
   subject = signal('');
   isLoading = signal(false);
   error = signal<string | null>(null);
@@ -24,12 +24,22 @@ export class AppComponent {
       return [];
     }
 
-    const titles = [
+    const cinematicTitles = [
       'CONTEXT FOUNDATION', 'IMMERSIVE SCENE SETUP', 'NARRATIVE SUBJECT DEFINITION',
       'ENERGETIC ACTION CHOREOGRAPHY', 'MECHANICAL CAMERA DIRECTION', 'ATMOSPHERIC LIGHTING DESIGN',
       'TONAL AUDIO ARCHITECTURE', 'INTEGRATED STYLE PALETTE', 'CALIBRATED OUTPUT SPECIFICATIONS',
       'ENHANCEMENT MODIFIERS', 'EMPHASIS CONTROLLER', 'CONSTRAINT LIMITER', 'STYLE ADAPTER'
     ];
+    
+    const articulatedTitles = [
+      'AESTHETIC FOUNDATION LAYER', 'RHYTHMIC TIMING ARCHITECTURE', 'TEMPORAL MOTION DYNAMICS',
+      'IMMERSIVE CHARACTER PSYCHOLOGY', 'CINEMATIC STAGING MASTERY', 'UNITY CONSISTENCY ENGINE',
+      'LIFE-INFUSED MOTION PRINCIPLES', 'ATMOSPHERIC ENVIRONMENT DESIGN', 'TECHNICAL EXCELLENCE OPTIMIZATION',
+      'EMOTIONAL NARRATIVE THREADING', 'DYNAMIC ENHANCEMENT MATRIX',
+      'STYLE CATALYST', 'PHYSICS AMPLIFIER', 'EMOTIONAL RESONATOR', 'PLATFORM OPTIMIZER'
+    ];
+
+    const titles = this.activeFramework() === 'cinematic' ? cinematicTitles : articulatedTitles;
     
     // A regex to split the text by the titles, case-insensitive, followed by a colon.
     const regex = new RegExp(`^(${titles.join('|')}):`, 'gim');
@@ -64,6 +74,12 @@ export class AppComponent {
     return sections;
   });
 
+  selectFramework(framework: 'cinematic' | 'articulated'): void {
+    this.activeFramework.set(framework);
+    this.generatedPrompt.set(null);
+    this.error.set(null);
+  }
+
   updateSubject(event: Event): void {
     const input = event.target as HTMLInputElement;
     this.subject.set(input.value);
@@ -79,7 +95,11 @@ export class AppComponent {
     this.generatedPrompt.set(null);
 
     try {
-      const result = await this.geminiService.generateCinematicPrompt(this.subject());
+      const promptGenerator = this.activeFramework() === 'cinematic'
+        ? this.geminiService.generateCinematicPrompt(this.subject())
+        : this.geminiService.generateArticulatedPrompt(this.subject());
+      
+      const result = await promptGenerator;
       this.generatedPrompt.set(result);
     } catch (e) {
       this.error.set('An error occurred while generating the prompt. Please try again.');
