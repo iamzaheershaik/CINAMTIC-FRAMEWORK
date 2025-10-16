@@ -7,6 +7,22 @@ import { ProGuideComponent } from './pro-guide/pro-guide.component';
 type FrameworkType = 'cinematic' | 'articulated' | 'photoreal' | 'pro-guide' | 'logo-reveal' | 'transformation' | 'storyboard' | 'character' | 'motion';
 export type CoPilotFramework = 'cinematic' | 'articulated' | 'photoreal';
 
+type CoPilotOutput = {
+  aiCoPilotEnabled: boolean;
+  framework: string;
+  originalPrompt: string;
+  outputPrompt: string;
+  cameraSettings: {
+    selected_shots: string[];
+    rationale: string;
+  };
+  negative_prompt_analysis: {
+    rationale: string;
+    negative_prompts: string[];
+  };
+  error: string | null;
+};
+
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
@@ -52,6 +68,24 @@ export class AppComponent {
   aiCoPilotEnabled = signal(false);
   coPilotOutput = signal<string | null>(null);
   
+  parsedCoPilotOutput = computed<CoPilotOutput | null>(() => {
+    const output = this.coPilotOutput();
+    if (this.promptFormat() === 'json' && output) {
+      try {
+        const parsed = JSON.parse(output);
+        // Basic validation that the new field exists before returning typed object
+        if (parsed && parsed.negative_prompt_analysis) {
+          return parsed as CoPilotOutput;
+        }
+        return null;
+      } catch (e) {
+        console.error('Failed to parse CoPilot output:', e);
+        return null;
+      }
+    }
+    return null;
+  });
+
   // Signals for Transformation Framework
   sourceSubject = signal('');
   targetSubject = signal('');

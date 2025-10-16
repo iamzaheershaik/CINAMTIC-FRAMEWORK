@@ -268,9 +268,25 @@ A single paragraph of plain text.
           },
           required: ['selected_shots', 'rationale']
         },
+        negative_prompt_analysis: {
+            type: Type.OBJECT,
+            description: "An analysis of potential negative prompts based on the optimized output prompt.",
+            properties: {
+                rationale: {
+                    type: Type.STRING,
+                    description: "A brief explanation of why these negative prompts are important for this specific output prompt."
+                },
+                negative_prompts: {
+                    type: Type.ARRAY,
+                    items: { type: Type.STRING },
+                    description: "An array of specific negative prompts to avoid common AI generation pitfalls."
+                }
+            },
+            required: ['rationale', 'negative_prompts']
+        },
         error: { type: Type.STRING, description: "Error details if the prompt is invalid, otherwise it MUST be null." }
       },
-      required: ['aiCoPilotEnabled', 'framework', 'originalPrompt', 'outputPrompt', 'cameraSettings', 'error']
+      required: ['aiCoPilotEnabled', 'framework', 'originalPrompt', 'outputPrompt', 'cameraSettings', 'negative_prompt_analysis', 'error']
     };
     
     const availableCameraShots = cameraShots.map(s => s.name.split(' (')[0]);
@@ -281,14 +297,15 @@ A single paragraph of plain text.
 
     if (format === 'json') {
         masterPrompt = `
-You are an AI Co-pilot for a professional prompt engineer. Your task is to analyze a user's prompt, automatically select the best camera controls, and generate an optimized, concise output prompt.
+You are an AI Co-pilot for a professional prompt engineer. Your task is to analyze a user's prompt, automatically select the best camera controls, generate an optimized, concise output prompt, and provide a negative prompt analysis.
 
 **Process:**
 1.  **Validate Input:** Analyze the user's 'originalPrompt'. If it's invalid, nonsensical, or too vague to process, set a descriptive error message in the 'error' field and stop. Otherwise, set 'error' to null.
 2.  **Select Camera Shots:** Based on the 'originalPrompt', choose the most advanced and appropriate camera shots from the provided list. You must select between 2 and 5 shots that will create the most dynamic and professional result.
 3.  **Generate Rationale:** Briefly explain why you chose those specific camera shots in the 'cameraSettings.rationale' field.
 4.  **Generate Optimized Prompt:** Create a new 'outputPrompt'. This must be an extremely concise, expertly crafted version of the original, using powerful single words or very short phrases to maximize impact and reduce length.
-5.  **Format Output:** Return a single JSON object that strictly adheres to the provided schema. The 'aiCoPilotEnabled' field must be true. The 'framework' field must be '${framework}'. The 'originalPrompt' must be the user's provided subject.
+5.  **Analyze for Negative Prompts:** Based on the final 'outputPrompt', identify potential failure modes (e.g., poor composition, unrealistic textures, bad lighting, inconsistent style). Generate a list of 3-5 specific negative prompts to counteract these issues and provide a brief rationale for why these negatives are important.
+6.  **Format Output:** Return a single JSON object that strictly adheres to the provided schema. The 'aiCoPilotEnabled' field must be true. The 'framework' field must be '${framework}'. The 'originalPrompt' must be the user's provided subject.
 
 **Available Camera Shots (Choose from this list only):**
 ${availableCameraShots.join(', ')}
@@ -303,14 +320,15 @@ ${availableCameraShots.join(', ')}
         };
     } else { // format === 'text'
         masterPrompt = `
-You are an AI Co-pilot for a professional prompt engineer. Your task is to analyze a user's prompt, automatically select the best camera controls, and generate an optimized, concise output prompt as formatted text.
+You are an AI Co-pilot for a professional prompt engineer. Your task is to analyze a user's prompt, automatically select the best camera controls, generate an optimized, concise output prompt, and provide a negative prompt analysis, all as formatted text.
 
 **Process:**
 1.  **Validate Input:** Analyze the user's 'originalPrompt'. If it's invalid, nonsensical, or too vague, just output an error message.
 2.  **Select Camera Shots:** Based on the 'originalPrompt', choose between 2 and 5 of the most advanced and appropriate camera shots from the provided list.
 3.  **Generate Rationale:** Briefly explain why you chose those specific camera shots.
 4.  **Generate Optimized Prompt:** Create a new optimized prompt. This must be an extremely concise, expertly crafted version of the original. Use powerful, evocative single words or very short phrases where possible to maximize impact.
-5.  **Format Output:** Return a single formatted text block. Use markdown-style headers for each section: 'OPTIMIZED PROMPT:', 'SELECTED CAMERA SHOTS:', and 'RATIONALE:'. Do NOT output JSON.
+5.  **Analyze for Negative Prompts:** Based on the optimized prompt, identify potential failure modes. Provide a brief rationale and then list 3-5 specific negative prompts to counteract these issues.
+6.  **Format Output:** Return a single formatted text block. Use markdown-style headers for each section: 'OPTIMIZED PROMPT:', 'SELECTED CAMERA SHOTS:', 'RATIONALE:', and 'AUTO NEGATIVE PROMPT ANALYSIS:'. Do NOT output JSON.
 
 **Available Camera Shots (Choose from this list only):**
 ${availableCameraShots.join(', ')}
