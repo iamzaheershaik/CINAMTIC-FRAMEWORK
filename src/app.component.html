@@ -1,7 +1,7 @@
 <main class="h-full overflow-y-auto text-gray-100 flex flex-col items-center p-4 sm:p-8 font-sans">
   <div class="w-full max-w-4xl mx-auto">
     
-    @if (activeFramework() !== 'pro-guide') {
+    @if (activeFramework() !== 'pro-guide' && activeFramework() !== 'transformation') {
       <!-- Header -->
       <header class="text-center mb-8">
         @if (activeFramework() === 'logo-reveal') {
@@ -60,6 +60,15 @@
         [class.text-gray-400]="activeFramework() !== 'photoreal'"
         [class.border-transparent]="activeFramework() !== 'photoreal'">
         PHOTOREAL
+      </button>
+      <button 
+        (click)="selectFramework('transformation')"
+        class="py-4 px-6 block hover:text-purple-300 focus:outline-none border-b-2 font-medium transition duration-200"
+        [class.text-purple-400]="activeFramework() === 'transformation'"
+        [class.border-purple-400]="activeFramework() === 'transformation'"
+        [class.text-gray-400]="activeFramework() !== 'transformation'"
+        [class.border-transparent]="activeFramework() !== 'transformation'">
+        TRANSFORMATION
       </button>
       <button 
         (click)="selectFramework('logo-reveal')"
@@ -161,6 +170,100 @@
           </div>
         }
       </div>
+    } @else if (activeFramework() === 'transformation') {
+        <!-- Header -->
+        <header class="text-center mb-8">
+          <h1 class="text-4xl sm:text-5xl font-bold text-white mb-2">
+            AI Transformation Prompt Generator
+          </h1>
+          <p class="text-lg text-gray-400">
+            Craft detailed video prompts for source-to-target transformations.
+          </p>
+        </header>
+
+        <!-- Input Section -->
+        <div class="mb-8 p-6 bg-gray-800/50 rounded-xl border border-gray-700 shadow-lg space-y-6">
+          <div class="flex flex-col md:flex-row gap-6">
+            <!-- Source Subject -->
+            <div class="flex-1">
+              <label for="source-subject" class="block text-lg font-medium text-purple-300 mb-3">Source Subject</label>
+              <textarea 
+                id="source-subject"
+                [value]="sourceSubject()"
+                (input)="updateSourceSubject($event)"
+                placeholder="e.g., A man in a business suit..."
+                class="w-full p-4 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition duration-200 h-32 resize-y"
+                rows="4"
+              ></textarea>
+            </div>
+            <!-- Target Subject -->
+            <div class="flex-1">
+              <label for="target-subject" class="block text-lg font-medium text-purple-300 mb-3">Target Subject</label>
+              <textarea 
+                id="target-subject"
+                [value]="targetSubject()"
+                (input)="updateTargetSubject($event)"
+                placeholder="e.g., ...transforms into a powerful cyborg warrior."
+                class="w-full p-4 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition duration-200 h-32 resize-y"
+                rows="4"
+              ></textarea>
+            </div>
+          </div>
+          <div class="text-center">
+            <button 
+              (click)="onGenerate()"
+              [disabled]="isLoading() || !sourceSubject().trim() || !targetSubject().trim()"
+              class="flex items-center mx-auto justify-center px-8 py-4 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 disabled:bg-purple-800 disabled:cursor-not-allowed disabled:text-gray-400 transition duration-200 shadow-md transform hover:scale-105 active:scale-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-gray-900">
+              @if (isLoading()) {
+                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Generating...</span>
+              } @else {
+                <span>Generate Transformation</span>
+              }
+            </button>
+          </div>
+        </div>
+
+        <!-- Output Section -->
+        <div class="w-full space-y-8">
+          @if (isLoading()) {
+            <div class="text-center p-8">
+              <div class="flex justify-center items-center space-x-2">
+                <div class="w-4 h-4 rounded-full bg-purple-400 animate-pulse [animation-delay:-0.3s]"></div>
+                <div class="w-4 h-4 rounded-full bg-purple-400 animate-pulse [animation-delay:-0.15s]"></div>
+                <div class="w-4 h-4 rounded-full bg-purple-400 animate-pulse"></div>
+              </div>
+              <p class="mt-4 text-gray-400">The AI is crafting your transformation prompt...</p>
+            </div>
+          }
+
+          @if (error()) {
+            <div class="bg-red-900/50 border border-red-700 text-red-300 px-4 py-3 rounded-lg" role="alert">
+              <strong class="font-bold">Error: </strong>
+              <span class="block sm:inline">{{ error() }}</span>
+            </div>
+          }
+
+          @if (promptSections().length > 0) {
+            <div class="bg-gray-800/50 rounded-xl border border-gray-700 shadow-lg relative">
+              <div class="p-6 sm:p-8">
+                <div class="flex justify-between items-center mb-6">
+                  <h2 class="text-2xl font-bold text-white">{{ promptSections()[0].title }}</h2>
+                  <button (click)="copyToClipboard()" 
+                    class="px-4 py-2 bg-gray-700 text-gray-300 font-semibold rounded-lg hover:bg-gray-600 transition duration-200 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+                      {{ copyButtonText() }}
+                  </button>
+                </div>
+                <div class="bg-gray-900 p-4 rounded-lg border border-gray-700">
+                  <p class="text-gray-300 whitespace-pre-wrap">{{ promptSections()[0].content }}</p>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
     } @else {
       <!-- Input Section -->
       <div class="mb-8 p-6 bg-gray-800/50 rounded-xl border border-gray-700 shadow-lg">

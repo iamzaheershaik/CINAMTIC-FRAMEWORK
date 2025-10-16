@@ -94,6 +94,48 @@ export class GeminiService {
     this.ai = new GoogleGenAI({ apiKey: this.apiKey });
   }
 
+  async generateTransformationPrompt(source: string, target: string): Promise<string> {
+    const model = 'gemini-2.5-flash';
+
+    const masterPrompt = `
+You are an expert AI video prompt engineer specializing in complex visual transformations. Your task is to generate a single, clear, and concise plain text prompt that describes a seamless and visually stunning transformation from a source subject to a target subject.
+
+**Checklist for Transformation Prompt Generation:**
+1.  **Analyze Source & Target:** Clearly establish the starting appearance of the source subject and the final form of the target.
+2.  **Visualize the Mid-point:** Describe the critical mid-transformation phase. What does the blending of source and target look like? Is it organic, mechanical, magical?
+3.  **Detail the Transition:** Articulate the transformation's dynamics. Is it rapid and explosive, or slow and elegant? Describe key visual effects (e.g., shimmering energy, shifting metal plates, growing fur).
+4.  **Define the Environment:** Briefly describe how the environment reacts to the transformation (e.g., ground cracking, lights flickering, wind swirling).
+5.  **Set the Cinematic Tone:** Specify camera work (e.g., 'slow push-in', 'dynamic arc shot') and lighting that enhance the drama of the moment.
+6.  **Validate Prompt:** Before finalizing, internally review the prompt for clarity, safety, and ambiguity. Ensure it's creative and directly usable by an AI video model. If it fails validation, self-correct and regenerate.
+
+**Request:**
+Generate a single, coherent, plain text prompt for an AI video model based on the following transformation:
+
+- **Source Subject:** "${source}"
+- **Target Subject:** "${target}"
+
+**Output Format:**
+- A single plain text string.
+- Do NOT use JSON or markdown.
+- The prompt should be a descriptive paragraph, ready for an AI video generator.
+`;
+
+    try {
+      const response = await this.ai.models.generateContent({
+        model: model,
+        contents: masterPrompt,
+        config: {
+            temperature: 0.7,
+            topP: 0.95
+        }
+      });
+      return response.text.trim();
+    } catch (error) {
+      console.error('Error calling Gemini API for transformation prompt:', error);
+      throw new Error('Failed to generate transformation prompt from Gemini API.');
+    }
+  }
+
   async generateWithCoPilot(subject: string, framework: CoPilotFramework, cameraShots: {name: string, description: string}[], format: 'text' | 'json'): Promise<string> {
     const model = 'gemini-2.5-flash';
     

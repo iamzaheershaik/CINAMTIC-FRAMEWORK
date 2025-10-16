@@ -4,7 +4,7 @@ import { GeminiService, PromptSection } from './services/gemini.service';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { ProGuideComponent } from './pro-guide/pro-guide.component';
 
-type FrameworkType = 'cinematic' | 'articulated' | 'photoreal' | 'pro-guide' | 'logo-reveal';
+type FrameworkType = 'cinematic' | 'articulated' | 'photoreal' | 'pro-guide' | 'logo-reveal' | 'transformation';
 export type CoPilotFramework = 'cinematic' | 'articulated' | 'photoreal';
 
 @Component({
@@ -52,6 +52,10 @@ export class AppComponent {
   aiCoPilotEnabled = signal(false);
   coPilotOutput = signal<string | null>(null);
   
+  // Signals for Transformation Framework
+  sourceSubject = signal('');
+  targetSubject = signal('');
+
   readonly cameraShots = [
     { name: 'Aerial Shot (Helicopter Shot, Drone Shot)', description: 'A shot taken from high above to show expansive views.' },
     { name: 'Arc Shot', description: 'Camera moves in a curved path around the subject for dynamic interest.' },
@@ -105,6 +109,10 @@ export class AppComponent {
     const jsonString = this.generatedPrompt();
     if (!jsonString) {
       return [];
+    }
+
+    if (this.activeFramework() === 'transformation') {
+      return [{ title: 'TRANSFORMATION PROMPT', content: jsonString }];
     }
 
     try {
@@ -177,6 +185,8 @@ export class AppComponent {
     this.uploadedLogo.set(null);
     this.uploadedLogoPreview.set(null);
     this.logoRevealOutput.set(null);
+    this.sourceSubject.set('');
+    this.targetSubject.set('');
   }
   
   selectOutputType(type: 'video' | 'image'): void {
@@ -186,6 +196,16 @@ export class AppComponent {
   updateSubject(event: Event): void {
     const input = event.target as HTMLTextAreaElement;
     this.subject.set(input.value);
+  }
+
+  updateSourceSubject(event: Event): void {
+    const input = event.target as HTMLTextAreaElement;
+    this.sourceSubject.set(input.value);
+  }
+
+  updateTargetSubject(event: Event): void {
+    const input = event.target as HTMLTextAreaElement;
+    this.targetSubject.set(input.value);
   }
   
   private clearWorkspace(): void {
@@ -210,9 +230,17 @@ export class AppComponent {
   }
 
   async onGenerate(): Promise<void> {
-    if (!this.subject().trim() || this.isLoading()) {
-      return;
+    const activeFramework = this.activeFramework();
+    if (activeFramework === 'transformation') {
+      if (!this.sourceSubject().trim() || !this.targetSubject().trim() || this.isLoading()) {
+        return;
+      }
+    } else if (activeFramework !== 'logo-reveal') {
+       if (!this.subject().trim() || this.isLoading()) {
+        return;
+      }
     }
+
 
     this.isLoading.set(true);
     this.error.set(null);
@@ -222,8 +250,10 @@ export class AppComponent {
     this.clearWorkspace();
 
     try {
-      const activeFramework = this.activeFramework();
-      if (activeFramework === 'cinematic' || activeFramework === 'articulated' || activeFramework === 'photoreal') {
+      if (activeFramework === 'transformation') {
+        const result = await this.geminiService.generateTransformationPrompt(this.sourceSubject(), this.targetSubject());
+        this.generatedPrompt.set(result);
+      } else if (activeFramework === 'cinematic' || activeFramework === 'articulated' || activeFramework === 'photoreal') {
         const format = this.promptFormat();
         if (this.aiCoPilotEnabled()) {
           const result = await this.geminiService.generateWithCoPilot(this.subject(), activeFramework as CoPilotFramework, this.cameraShots, format);
@@ -379,7 +409,9 @@ export class AppComponent {
   copyToClipboard(): void {
     let textToCopy: string | null = null;
 
-    if (this.activeFramework() === 'logo-reveal') {
+    if (this.activeFramework() === 'transformation') {
+      textToCopy = this.generatedPrompt();
+    } else if (this.activeFramework() === 'logo-reveal') {
         textToCopy = this.logoRevealJson();
     } else if (this.aiCoPilotEnabled()) {
         textToCopy = this.coPilotOutput(); // coPilotOutput can be text or json string now
