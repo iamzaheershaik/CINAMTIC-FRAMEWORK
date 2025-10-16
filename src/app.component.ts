@@ -1,10 +1,10 @@
 import { Component, ChangeDetectionStrategy, signal, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { GeminiService, PromptSection, AudioInputs } from './services/gemini.service';
+import { GeminiService, MotionPromptParams, PromptSection, AudioInputs } from './services/gemini.service';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { ProGuideComponent } from './pro-guide/pro-guide.component';
 
-type FrameworkType = 'cinematic' | 'articulated' | 'photoreal' | 'pro-guide' | 'logo-reveal' | 'transformation' | 'storyboard' | 'character';
+type FrameworkType = 'cinematic' | 'articulated' | 'photoreal' | 'pro-guide' | 'logo-reveal' | 'transformation' | 'storyboard' | 'character' | 'motion';
 export type CoPilotFramework = 'cinematic' | 'articulated' | 'photoreal';
 
 @Component({
@@ -69,6 +69,23 @@ export class AppComponent {
   audioSfx = signal('');
   audioMusic = signal('');
 
+  // Signals for Motion Framework
+  motionSceneDescription = signal('');
+  selectedMotionCategory = signal('');
+  selectedMotionType = signal('');
+  motionDuration = signal('5-second');
+  motionCameraAngle = signal('eye-level');
+  motionIntensity = signal('moderate');
+  motionLighting = signal('natural lighting');
+  motionQuality = signal('4K, cinematic');
+  motionFrameRate = signal(24);
+  motionSpeedRamp = signal({ start: '1.0x', end: '0.25x', point: '2s', curve: 'ease-in-out' });
+  motionBulletTime = signal({ arc: '180 degrees', duration: '2 seconds' });
+  motionDollyZoom = signal({ dolly: 'in', zoom: 'out', intensity: 'moderate' });
+  motionParallax = signal({ layers: 4, separation: 'moderate' });
+  motionTiltShift = signal({ angle: '0 degrees', blur: 'strong' });
+  motionPromptOutput = signal<string | null>(null);
+
   readonly cameraShots = [
     { name: 'Aerial Shot (Helicopter Shot, Drone Shot)', description: 'A shot taken from high above to show expansive views.' },
     { name: 'Arc Shot', description: 'Camera moves in a curved path around the subject for dynamic interest.' },
@@ -116,6 +133,20 @@ export class AppComponent {
     { name: 'Wire Shot (Cable Cam Shot)', description: 'Camera moves on cables for smooth aerial movements.' },
     { name: 'Zoom Shot', description: 'Changes focal length to make subject appear closer or further away.' },
   ];
+
+  readonly motionTaxonomy = [
+    { category: 'Speed Variation', motions: [ { name: 'hyperspeed' }, { name: 'slow_motion' }, { name: 'speed_ramp' }, { name: 'time_lapse' }, { name: 'ultra_slow_motion' } ] },
+    { category: 'Temporal & Directional', motions: [ { name: 'reverse' }, { name: 'freeze_frame' }, { name: 'bullet_time' }, { name: 'stop_motion' }, { name: 'boomerang' } ] },
+    { category: 'Camera Movement', motions: [ { name: 'dolly_zoom' }, { name: 'push_in' }, { name: 'pull_out' }, { name: 'whip_pan' }, { name: 'camera_pan' }, { name: 'camera_tilt' }, { name: 'tracking_shot' }, { name: 'crab_shot' }, { name: 'orbit' } ] },
+    { category: 'Depth & Perspective', motions: [ { name: 'parallax_motion' }, { name: 'ken_burns_effect' }, { name: 'tilt_shift' }, { name: 'zoom_blur' } ] },
+    { category: 'Stylistic & Creative', motions: [ { name: 'glitch' }, { name: 'strobe' }, { name: 'jump_cut' }, { name: 'match_cut' }, { name: 'seamless_loop' } ] }
+  ];
+
+  availableMotions = computed(() => {
+    const category = this.selectedMotionCategory();
+    if (!category) return [];
+    return this.motionTaxonomy.find(c => c.category === category)?.motions || [];
+  });
 
 
   promptSections = computed<PromptSection[]>(() => {
@@ -229,6 +260,10 @@ export class AppComponent {
     this.styleReferenceImage.set(null);
     this.styleReferenceImagePreview.set(null);
     this.refinementInstruction.set('');
+    this.motionSceneDescription.set('');
+    this.selectedMotionCategory.set('');
+    this.selectedMotionType.set('');
+    this.motionPromptOutput.set(null);
   }
   
   selectOutputType(type: 'video' | 'image'): void {
@@ -552,6 +587,85 @@ export class AppComponent {
     }
   }
 
+  async onGenerateMotionPrompt(): Promise<void> {
+    if (!this.motionSceneDescription().trim() || !this.selectedMotionType() || this.isLoading()) {
+      return;
+    }
+    this.isLoading.set(true);
+    this.error.set(null);
+    this.motionPromptOutput.set(null);
+
+    let motionSpecific: any;
+    switch(this.selectedMotionType()) {
+      case 'speed_ramp': motionSpecific = this.motionSpeedRamp(); break;
+      case 'bullet_time': motionSpecific = this.motionBulletTime(); break;
+      case 'dolly_zoom': motionSpecific = this.motionDollyZoom(); break;
+      case 'parallax_motion': motionSpecific = this.motionParallax(); break;
+      case 'tilt_shift': motionSpecific = this.motionTiltShift(); break;
+    }
+
+    const params: MotionPromptParams = {
+      sceneDescription: this.motionSceneDescription(),
+      motionType: this.selectedMotionType(),
+      duration: this.motionDuration(),
+      cameraAngle: this.motionCameraAngle(),
+      intensity: this.motionIntensity(),
+      lighting: this.motionLighting(),
+      quality: this.motionQuality(),
+      frameRate: this.motionFrameRate(),
+      motionSpecific,
+    };
+
+    try {
+      const result = await this.geminiService.generateMotionPrompt(params);
+      this.motionPromptOutput.set(result);
+    } catch (e) {
+      this.error.set('An error occurred while generating the motion prompt.');
+      console.error(e);
+    } finally {
+      this.isLoading.set(false);
+    }
+  }
+
+  // Methods to fix template errors by handling updates in the component
+  updateMotionSpeedRamp(field: 'start' | 'end' | 'point' | 'curve', event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.motionSpeedRamp.update(current => ({ ...current, [field]: value }));
+  }
+
+  updateMotionBulletTime(field: 'arc' | 'duration', event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.motionBulletTime.update(current => ({ ...current, [field]: value }));
+  }
+
+  updateMotionDollyZoomDirection(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value as 'in' | 'out';
+    this.motionDollyZoom.update(current => ({
+        ...current,
+        dolly: value,
+        zoom: value === 'in' ? 'out' : 'in'
+    }));
+  }
+  
+  updateMotionDollyZoomIntensity(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value as 'subtle' | 'moderate' | 'dramatic';
+    this.motionDollyZoom.update(current => ({ ...current, intensity: value }));
+  }
+
+  updateMotionParallaxLayers(event: Event): void {
+    const value = +(event.target as HTMLInputElement).value;
+    this.motionParallax.update(current => ({ ...current, layers: value }));
+  }
+
+  updateMotionParallaxSeparation(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    this.motionParallax.update(current => ({ ...current, separation: value }));
+  }
+
+  updateMotionTiltShift(field: 'angle' | 'blur', event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.motionTiltShift.update(current => ({ ...current, [field]: value }));
+  }
 
   copyToClipboard(): void {
     let textToCopy: string | null = null;
@@ -568,6 +682,9 @@ export class AppComponent {
         break;
       case 'character':
         textToCopy = this.characterPacketJson();
+        break;
+      case 'motion':
+        textToCopy = this.motionPromptOutput();
         break;
       default:
         if (this.aiCoPilotEnabled()) {

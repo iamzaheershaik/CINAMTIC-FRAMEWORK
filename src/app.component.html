@@ -1,7 +1,7 @@
 <main class="h-full overflow-y-auto text-gray-100 flex flex-col items-center p-4 sm:p-8 font-sans">
   <div class="w-full max-w-4xl mx-auto">
     
-    @if (activeFramework() !== 'pro-guide' && activeFramework() !== 'transformation' && activeFramework() !== 'storyboard' && activeFramework() !== 'character') {
+    @if (activeFramework() !== 'pro-guide' && activeFramework() !== 'transformation' && activeFramework() !== 'storyboard' && activeFramework() !== 'character' && activeFramework() !== 'motion') {
       <!-- Header -->
       <header class="text-center mb-8">
         @if (activeFramework() === 'logo-reveal') {
@@ -60,6 +60,15 @@
         [class.text-gray-400]="activeFramework() !== 'photoreal'"
         [class.border-transparent]="activeFramework() !== 'photoreal'">
         PHOTOREAL
+      </button>
+       <button 
+        (click)="selectFramework('motion')"
+        class="py-4 px-4 sm:px-6 block hover:text-purple-300 focus:outline-none border-b-2 font-medium transition duration-200 text-sm sm:text-base"
+        [class.text-purple-400]="activeFramework() === 'motion'"
+        [class.border-purple-400]="activeFramework() === 'motion'"
+        [class.text-gray-400]="activeFramework() !== 'motion'"
+        [class.border-transparent]="activeFramework() !== 'motion'">
+        MOTION
       </button>
       <button 
         (click)="selectFramework('transformation')"
@@ -360,6 +369,157 @@
         }
         @if (characterPacketJson()) {
           <div class="bg-gray-800/50 rounded-xl border border-gray-700 shadow-lg relative"><div class="p-6 sm:p-8"><div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold text-white">Your Character Consistency Packet</h2><button (click)="copyToClipboard()" class="px-4 py-2 bg-gray-700 text-gray-300 font-semibold rounded-lg hover:bg-gray-600 transition duration-200 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">{{ copyButtonText() }}</button></div><pre class="bg-gray-900 p-4 rounded-lg overflow-x-auto border border-gray-700"><code class="text-sm text-gray-300 whitespace-pre-wrap">{{ characterPacketJson() }}</code></pre></div></div>
+        }
+      </div>
+    } @else if (activeFramework() === 'motion') {
+      <!-- Motion UI -->
+      <header class="text-center mb-8">
+        <h1 class="text-4xl sm:text-5xl font-bold text-white mb-2">AI Motion Prompt Generator</h1>
+        <p class="text-lg text-gray-400">Design complex video motion effects with a structured, professional framework.</p>
+      </header>
+      <div class="w-full space-y-8">
+        <div class="p-6 bg-gray-800/50 rounded-xl border border-gray-700 shadow-lg space-y-6">
+          <div>
+            <label for="motion-scene" class="block text-lg font-medium text-purple-300 mb-3">Scene Description</label>
+            <textarea id="motion-scene"
+              [value]="motionSceneDescription()"
+              (input)="motionSceneDescription.set($any($event.target).value)"
+              placeholder="e.g., a golden retriever running through a sunlit meadow with wildflowers"
+              class="w-full p-4 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition duration-200 h-32 resize-y"
+              rows="4"
+            ></textarea>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                  <label for="motion-category" class="block text-sm font-medium text-gray-300 mb-2">Motion Category</label>
+                  <select id="motion-category"
+                      class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg focus:ring-purple-500 focus:border-purple-500 block w-full p-2.5"
+                      (change)="selectedMotionCategory.set($any($event.target).value); selectedMotionType.set('')">
+                      <option value="">Select a category...</option>
+                      @for (cat of motionTaxonomy; track cat.category) {
+                          <option [value]="cat.category">{{ cat.category }}</option>
+                      }
+                  </select>
+              </div>
+              <div>
+                  <label for="motion-type" class="block text-sm font-medium text-gray-300 mb-2">Motion Type</label>
+                  <select id="motion-type"
+                      class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg focus:ring-purple-500 focus:border-purple-500 block w-full p-2.5"
+                      [disabled]="!selectedMotionCategory()"
+                      (change)="selectedMotionType.set($any($event.target).value)">
+                      <option value="">Select a motion...</option>
+                      @for (motion of availableMotions(); track motion.name) {
+                          <option [value]="motion.name">{{ motion.name }}</option>
+                      }
+                  </select>
+              </div>
+          </div>
+          
+          <div class="border-t border-gray-700/50 pt-4">
+              <h3 class="text-lg font-medium text-teal-300 mb-4">Optional Parameters</h3>
+              <div class="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div>
+                      <label for="motion-duration" class="block text-sm font-medium text-gray-400 mb-1">Duration</label>
+                      <select id="motion-duration" [value]="motionDuration()" (change)="motionDuration.set($any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-md p-2 text-sm text-white focus:ring-1 focus:ring-teal-500">
+                          <option>3-second</option><option>5-second</option><option>10-second</option><option>30-second</option>
+                      </select>
+                  </div>
+                  <div>
+                      <label for="motion-angle" class="block text-sm font-medium text-gray-400 mb-1">Camera Angle</label>
+                      <select id="motion-angle" [value]="motionCameraAngle()" (change)="motionCameraAngle.set($any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-md p-2 text-sm text-white focus:ring-1 focus:ring-teal-500">
+                           <option>aerial</option><option>eye-level</option><option>low-angle</option><option>high-angle</option><option>POV</option><option>wide-angle</option>
+                      </select>
+                  </div>
+                   <div>
+                      <label for="motion-intensity" class="block text-sm font-medium text-gray-400 mb-1">Intensity</label>
+                      <select id="motion-intensity" [value]="motionIntensity()" (change)="motionIntensity.set($any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-md p-2 text-sm text-white focus:ring-1 focus:ring-teal-500">
+                          <option>subtle</option><option>moderate</option><option>dramatic</option><option>extreme</option>
+                      </select>
+                  </div>
+                  <div>
+                      <label for="motion-lighting" class="block text-sm font-medium text-gray-400 mb-1">Lighting</label>
+                      <select id="motion-lighting" [value]="motionLighting()" (change)="motionLighting.set($any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-md p-2 text-sm text-white focus:ring-1 focus:ring-teal-500">
+                          <option>golden hour</option><option>natural lighting</option><option>studio lighting</option><option>dramatic shadows</option><option>neon lights</option><option>cinematic</option>
+                      </select>
+                  </div>
+                  <div>
+                      <label for="motion-quality" class="block text-sm font-medium text-gray-400 mb-1">Quality</label>
+                      <select id="motion-quality" [value]="motionQuality()" (change)="motionQuality.set($any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-md p-2 text-sm text-white focus:ring-1 focus:ring-teal-500">
+                          <option>4K, cinematic</option><option>HD, realistic</option><option>8K ultra-detailed</option><option>stylized animation</option>
+                      </select>
+                  </div>
+                  <div>
+                      <label for="motion-fps" class="block text-sm font-medium text-gray-400 mb-1">Frame Rate</label>
+                      <select id="motion-fps" [value]="motionFrameRate()" (change)="motionFrameRate.set(+$any($event.target).value)" class="w-full bg-gray-700 border border-gray-600 rounded-md p-2 text-sm text-white focus:ring-1 focus:ring-teal-500">
+                          <option>24</option><option>30</option><option>60</option><option>120</option>
+                      </select>
+                  </div>
+              </div>
+          </div>
+          
+          @if (selectedMotionType()) {
+            <div class="border-t border-gray-700/50 pt-4 animate-[fadeIn_0.3s_ease-in-out]">
+              <h3 class="text-lg font-medium text-teal-300 mb-4">Motion-Specific Parameters for <span class="font-bold text-teal-200">{{selectedMotionType()}}</span></h3>
+              <div class="p-4 bg-gray-900/40 border border-gray-700/60 rounded-lg">
+                @if (selectedMotionType() === 'speed_ramp') {
+                  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                      <div><label class="block text-sm text-gray-400 mb-1">Start Speed</label><input type="text" [value]="motionSpeedRamp().start" (input)="updateMotionSpeedRamp('start', $event)" class="w-full bg-gray-700 border-gray-600 rounded-md p-2 text-sm"></div>
+                      <div><label class="block text-sm text-gray-400 mb-1">End Speed</label><input type="text" [value]="motionSpeedRamp().end" (input)="updateMotionSpeedRamp('end', $event)" class="w-full bg-gray-700 border-gray-600 rounded-md p-2 text-sm"></div>
+                      <div><label class="block text-sm text-gray-400 mb-1">Transition Point</label><input type="text" [value]="motionSpeedRamp().point" (input)="updateMotionSpeedRamp('point', $event)" class="w-full bg-gray-700 border-gray-600 rounded-md p-2 text-sm"></div>
+                      <div><label class="block text-sm text-gray-400 mb-1">Curve</label><select [value]="motionSpeedRamp().curve" (change)="updateMotionSpeedRamp('curve', $event)" class="w-full bg-gray-700 border-gray-600 rounded-md p-2 text-sm"><option>linear</option><option>ease-in</option><option>ease-out</option><option>ease-in-out</option></select></div>
+                  </div>
+                } @else if (selectedMotionType() === 'bullet_time') {
+                  <div class="grid grid-cols-2 gap-4">
+                      <div><label class="block text-sm text-gray-400 mb-1">Camera Arc</label><input type="text" [value]="motionBulletTime().arc" (input)="updateMotionBulletTime('arc', $event)" class="w-full bg-gray-700 border-gray-600 rounded-md p-2 text-sm"></div>
+                      <div><label class="block text-sm text-gray-400 mb-1">Freeze Duration</label><input type="text" [value]="motionBulletTime().duration" (input)="updateMotionBulletTime('duration', $event)" class="w-full bg-gray-700 border-gray-600 rounded-md p-2 text-sm"></div>
+                  </div>
+                } @else if (selectedMotionType() === 'dolly_zoom') {
+                  <div class="grid grid-cols-3 gap-4">
+                      <div><label class="block text-sm text-gray-400 mb-1">Dolly Direction</label><select [value]="motionDollyZoom().dolly" (change)="updateMotionDollyZoomDirection($event)" class="w-full bg-gray-700 border-gray-600 rounded-md p-2 text-sm"><option>in</option><option>out</option></select></div>
+                      <div><label class="block text-sm text-gray-400 mb-1">Zoom Direction</label><input type="text" [value]="motionDollyZoom().zoom" readonly class="w-full bg-gray-800 border-gray-600 rounded-md p-2 text-sm text-gray-400"></div>
+                      <div><label class="block text-sm text-gray-400 mb-1">Intensity</label><select [value]="motionDollyZoom().intensity" (change)="updateMotionDollyZoomIntensity($event)" class="w-full bg-gray-700 border-gray-600 rounded-md p-2 text-sm"><option>subtle</option><option>moderate</option><option>dramatic</option></select></div>
+                  </div>
+                } @else if (selectedMotionType() === 'parallax_motion') {
+                  <div class="grid grid-cols-2 gap-4">
+                      <div><label class="block text-sm text-gray-400 mb-1">Layer Count</label><input type="number" [value]="motionParallax().layers" (input)="updateMotionParallaxLayers($event)" min="2" max="10" class="w-full bg-gray-700 border-gray-600 rounded-md p-2 text-sm"></div>
+                      <div><label class="block text-sm text-gray-400 mb-1">Depth Separation</label><select [value]="motionParallax().separation" (change)="updateMotionParallaxSeparation($event)" class="w-full bg-gray-700 border-gray-600 rounded-md p-2 text-sm"><option>subtle</option><option>moderate</option><option>pronounced</option></select></div>
+                  </div>
+                } @else if (selectedMotionType() === 'tilt_shift') {
+                  <div class="grid grid-cols-2 gap-4">
+                      <div><label class="block text-sm text-gray-400 mb-1">Focal Plane Angle</label><input type="text" [value]="motionTiltShift().angle" (input)="updateMotionTiltShift('angle', $event)" class="w-full bg-gray-700 border-gray-600 rounded-md p-2 text-sm"></div>
+                      <div><label class="block text-sm text-gray-400 mb-1">Blur Intensity</label><select [value]="motionTiltShift().blur" (change)="updateMotionTiltShift('blur', $event)" class="w-full bg-gray-700 border-gray-600 rounded-md p-2 text-sm"><option>subtle</option><option>moderate</option><option>strong</option></select></div>
+                  </div>
+                } @else {
+                  <p class="text-gray-400 text-sm">This motion type has no specific parameters.</p>
+                }
+              </div>
+            </div>
+          }
+
+          <div class="text-center pt-4">
+            <button 
+              (click)="onGenerateMotionPrompt()"
+              [disabled]="isLoading() || !motionSceneDescription().trim() || !selectedMotionType()"
+              class="flex items-center mx-auto justify-center px-8 py-4 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 disabled:bg-purple-800 disabled:cursor-not-allowed disabled:text-gray-400 transition duration-200 shadow-md transform hover:scale-105 active:scale-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-gray-900">
+              @if (isLoading()) {
+                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                <span>Generating Motion Prompt...</span>
+              } @else {
+                <span>Generate Motion Prompt</span>
+              }
+            </button>
+          </div>
+        </div>
+
+        @if (isLoading()) {
+          <div class="text-center p-8"><div class="flex justify-center items-center space-x-2"><div class="w-4 h-4 rounded-full bg-purple-400 animate-pulse [animation-delay:-0.3s]"></div><div class="w-4 h-4 rounded-full bg-purple-400 animate-pulse [animation-delay:-0.15s]"></div><div class="w-4 h-4 rounded-full bg-purple-400 animate-pulse"></div></div><p class="mt-4 text-gray-400">The AI is crafting your motion prompt...</p></div>
+        }
+        @if (error()) {
+          <div class="bg-red-900/50 border border-red-700 text-red-300 px-4 py-3 rounded-lg" role="alert"><strong class="font-bold">Error: </strong><span class="block sm:inline">{{ error() }}</span></div>
+        }
+        @if (motionPromptOutput()) {
+          <div class="bg-gray-800/50 rounded-xl border border-gray-700 shadow-lg relative"><div class="p-6 sm:p-8"><div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold text-white">Your Generated Motion Prompt</h2><button (click)="copyToClipboard()" class="px-4 py-2 bg-gray-700 text-gray-300 font-semibold rounded-lg hover:bg-gray-600 transition duration-200 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">{{ copyButtonText() }}</button></div><div class="bg-gray-900 p-4 rounded-lg border border-gray-700"><p class="text-gray-300 whitespace-pre-wrap">{{ motionPromptOutput() }}</p></div></div></div>
         }
       </div>
     } @else {

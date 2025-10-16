@@ -13,6 +13,18 @@ export interface AudioInputs {
   music: string;
 }
 
+export interface MotionPromptParams {
+  sceneDescription: string;
+  motionType: string;
+  duration?: string;
+  cameraAngle?: string;
+  intensity?: string;
+  lighting?: string;
+  quality?: string;
+  frameRate?: number;
+  motionSpecific?: any;
+}
+
 const cinematicSchema = {
   type: Type.OBJECT,
   properties: {
@@ -164,6 +176,66 @@ Generate a single, coherent, plain text prompt for an AI video model based on th
     } catch (error) {
       console.error('Error calling Gemini API for transformation prompt:', error);
       throw new Error('Failed to generate transformation prompt from Gemini API.');
+    }
+  }
+
+  async generateMotionPrompt(params: MotionPromptParams): Promise<string> {
+    const model = 'gemini-2.5-flash';
+
+    let additionalContext = '';
+    if (params.motionSpecific) {
+        switch (params.motionType) {
+            case 'speed_ramp':
+                additionalContext = `The speed ramps from ${params.motionSpecific.start} to ${params.motionSpecific.end} at the ${params.motionSpecific.point} mark with an '${params.motionSpecific.curve}' curve.`;
+                break;
+            case 'bullet_time':
+                additionalContext = `The camera performs a ${params.motionSpecific.arc} arc around the subject during a freeze-frame that lasts ${params.motionSpecific.duration}.`;
+                break;
+            case 'dolly_zoom':
+                additionalContext = `A ${params.motionSpecific.intensity} dolly zoom is executed, with the camera dollying ${params.motionSpecific.dolly} while zooming ${params.motionSpecific.zoom}.`;
+                break;
+            case 'parallax_motion':
+                additionalContext = `The scene has a 2.5D parallax effect with ${params.motionSpecific.layers} layers and ${params.motionSpecific.separation} depth separation.`;
+                break;
+            case 'tilt_shift':
+                additionalContext = `A miniature effect is created using tilt-shift with a ${params.motionSpecific.angle} focal plane and ${params.motionSpecific.blur} blur intensity.`;
+                break;
+        }
+    }
+
+    const template = `A ${params.duration} video showing ${params.sceneDescription}, filmed with ${params.cameraAngle} angle. The motion style is ${params.motionType} with ${params.intensity} intensity. The lighting is ${params.lighting}. ${additionalContext} The quality should be ${params.quality} at ${params.frameRate}fps.`;
+
+    const masterPrompt = `
+You are an expert AI video prompt engineer. Your task is to generate a single, coherent, plain text prompt for an AI video model.
+Refine the following prompt template by filling in the details and making it more evocative and descriptive, while adhering to the core parameters. The final output should be a single, ready-to-use paragraph. Do not use JSON or markdown.
+
+**Prompt Template to Refine:**
+"${template}"
+
+**Refinement Guidelines:**
+- Expand on the scene description to add cinematic detail.
+- Weave the motion style and intensity naturally into the description.
+- Ensure the lighting description enhances the mood.
+- Add any relevant technical details like motion blur or high frame rate capture if implied by the parameters.
+- The final prompt should not exceed 990 characters.
+
+**Final Output:**
+A single paragraph of plain text.
+`;
+
+    try {
+        const response = await this.ai.models.generateContent({
+            model: model,
+            contents: masterPrompt,
+            config: {
+                temperature: 0.7,
+                topP: 0.95
+            }
+        });
+        return response.text.trim();
+    } catch (error) {
+        console.error('Error calling Gemini API for motion prompt:', error);
+        throw new Error('Failed to generate motion prompt from Gemini API.');
     }
   }
 
