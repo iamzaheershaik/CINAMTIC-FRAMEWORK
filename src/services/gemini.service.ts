@@ -7,6 +7,12 @@ export interface PromptSection {
   content: string;
 }
 
+export interface AudioInputs {
+  mood: string;
+  sfx: string;
+  music: string;
+}
+
 const cinematicSchema = {
   type: Type.OBJECT,
   properties: {
@@ -76,6 +82,31 @@ const photorealSchema = {
     'sound_design_and_foley', 'post_production_and_color_grade', 'render_engine_specifications', 'brand_call_to_action',
     'negative_prompt'
   ]
+};
+
+const storyboardSchema = {
+  type: Type.ARRAY,
+  items: {
+    type: Type.OBJECT,
+    properties: {
+      shot_number: { type: Type.NUMBER, description: "The sequential number of the shot." },
+      shot_description: { type: Type.STRING, description: "A detailed description of the shot, including subject, action, camera work, and environment." },
+      transition_to_next: { type: Type.STRING, description: "A description of the cinematic transition to the next shot (e.g., 'Cut to:', 'Fade to black', 'Wipe left'). For the last shot, this can be 'End scene.'." }
+    },
+    required: ['shot_number', 'shot_description', 'transition_to_next']
+  }
+};
+
+const characterPacketSchema = {
+  type: Type.OBJECT,
+  properties: {
+    name: { type: Type.STRING, description: "The character's name or title." },
+    physical_description: { type: Type.STRING, description: "Exhaustive details of appearance: age, build, ethnicity, hair, eyes, facial features, distinguishing marks." },
+    wardrobe_style: { type: Type.STRING, description: "Specific clothing items, fabrics, colors, and overall style. Include accessories and footwear." },
+    personality_and_mannerisms: { type: Type.STRING, description: "Core personality traits and how they manifest in posture, expression, and movement." },
+    signature_prop: { type: Type.STRING, description: "An object the character is frequently associated with. Can be null if not applicable." }
+  },
+  required: ['name', 'physical_description', 'wardrobe_style', 'personality_and_mannerisms', 'signature_prop']
 };
 
 
@@ -306,12 +337,45 @@ Output Rules:
     }
   }
 
-  async generateCinematicPrompt(subject: string, outputType: 'video' | 'image', cameraShots: string[], format: 'text' | 'json'): Promise<string> {
+  async generateCinematicPrompt(subject: string, outputType: 'video' | 'image', cameraShots: string[], format: 'text' | 'json', styleImage?: { base64: string, mimeType: string }, audioInputs?: AudioInputs): Promise<string> {
+    return this.generateFullPrompt(subject, outputType, cameraShots, format, 'cinematic', cinematicSchema, styleImage, audioInputs);
+  }
+
+  async generateArticulatedPrompt(subject: string, outputType: 'video' | 'image', cameraShots: string[], format: 'text' | 'json', styleImage?: { base64: string, mimeType: string }, audioInputs?: AudioInputs): Promise<string> {
+    return this.generateFullPrompt(subject, outputType, cameraShots, format, 'articulated', articulatedSchema, styleImage, audioInputs);
+  }
+
+  async generatePhotorealPrompt(subject: string, outputType: 'video' | 'image', cameraShots: string[], format: 'text' | 'json', styleImage?: { base64: string, mimeType: string }, audioInputs?: AudioInputs): Promise<string> {
+    return this.generateFullPrompt(subject, outputType, cameraShots, format, 'photoreal', photorealSchema, styleImage, audioInputs);
+  }
+
+  private async generateFullPrompt(subject: string, outputType: 'video' | 'image', cameraShots: string[], format: 'text' | 'json', framework: 'cinematic' | 'articulated' | 'photoreal', schema: object, styleImage?: { base64: string, mimeType: string }, audioInputs?: AudioInputs): Promise<string> {
     const model = 'gemini-2.5-flash';
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const contents: any[] = [];
     
+    let cameraField = 'mechanical_camera_direction';
+    if (framework === 'articulated') cameraField = 'cinematic_staging_mastery';
+    if (framework === 'photoreal') cameraField = 'studio_lighting_and_cinematography';
+
     const cameraShotsInstruction = cameraShots.length > 0
-    ? `\nCrucially, you MUST incorporate the following specific camera shots into the 'mechanical_camera_direction' section. Blend them naturally with other camera work descriptions: ${cameraShots.join(', ')}.`
+    ? `\nCrucially, you MUST incorporate the following specific camera shots into the '${cameraField}' section. Blend them naturally with other camera work descriptions: ${cameraShots.join(', ')}.`
     : '';
+    
+    const styleInstruction = styleImage 
+    ? "\nAdditionally, you MUST analyze the provided style reference image. Infuse its aesthetic (color palette, lighting, texture, mood) into every aspect of the generated prompt, especially the 'integrated_style_palette' and 'atmospheric_lighting_design' sections."
+    : '';
+
+    let audioInstruction = '';
+    if (audioInputs) {
+        const audioParts = [];
+        if (audioInputs.mood) audioParts.push(`Mood: ${audioInputs.mood}`);
+        if (audioInputs.sfx) audioParts.push(`Key Sound Effects: ${audioInputs.sfx}`);
+        if (audioInputs.music) audioParts.push(`Musical Style: ${audioInputs.music}`);
+        if (audioParts.length > 0) {
+            audioInstruction = `\nFor the audio section, you MUST specifically incorporate the following user-defined elements: ${audioParts.join(', ')}.`;
+        }
+    }
 
     let masterPrompt: string;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -319,11 +383,13 @@ Output Rules:
 
     if (format === 'json') {
         masterPrompt = `
-You are an expert AI prompt engineer. Your task is to take a simple subject and expand it into a detailed, high-quality prompt for AI generation using the CINEMATIC framework.
+You are an expert AI prompt engineer specializing in the ${framework.toUpperCase()} framework. Your task is to take a simple subject and expand it into a detailed, high-quality prompt for AI generation.
 The final output will be an **${outputType.toUpperCase()}**. All sections must be filled out with this target medium in mind.
 - If the target is a VIDEO, describe movement, duration, sound, and camera choreography. The 'calibrated_output_specifications' must specify a duration between 8 and 10 seconds.
 - If the target is an IMAGE, describe a single, dynamic, frozen moment. Focus on composition, lighting, and detail. Replace concepts of duration and sound with descriptions of implied motion and mood.
 ${cameraShotsInstruction}
+${styleInstruction}
+${audioInstruction}
 Generate a JSON object that adheres to the provided schema. The JSON keys must be in snake_case.
 Fill out a value for every required property in the schema.
 Be creative, detailed, and evocative.
@@ -335,16 +401,18 @@ Finally, based on the detailed prompt you've created, generate a 'negative_promp
             temperature: 0.5,
             topP: 0.95,
             responseMimeType: "application/json",
-            responseSchema: cinematicSchema
+            responseSchema: schema
         };
     } else { // format === 'text'
         masterPrompt = `
-You are an expert AI prompt engineer. Your task is to take a simple subject and expand it into a detailed, high-quality prompt for AI generation using the CINEMATIC framework.
+You are an expert AI prompt engineer specializing in the ${framework.toUpperCase()} framework. Your task is to take a simple subject and expand it into a detailed, high-quality prompt for AI generation.
 The final output will be an **${outputType.toUpperCase()}**.
 - If the target is a VIDEO, describe movement, duration, sound, and camera choreography. The duration must be between 8 and 10 seconds.
 - If the target is an IMAGE, describe a single, dynamic, frozen moment. Focus on composition, lighting, and detail.
 ${cameraShotsInstruction}
-Generate a formatted plain text output. For each component of the CINEMATIC framework, use the component name as a capitalized header (e.g., 'CONTEXT FOUNDATION:') followed by the content. Do NOT output a JSON object.
+${styleInstruction}
+${audioInstruction}
+Generate a formatted plain text output. For each component of the ${framework.toUpperCase()} framework, use the component name as a capitalized header (e.g., 'CONTEXT FOUNDATION:') followed by the content. Do NOT output a JSON object.
 Finally, based on the detailed prompt you've created, generate a 'NEGATIVE PROMPT' section that lists potential pitfalls or unwanted elements to ensure a high-quality result.
 
 **Subject:** "${subject}"
@@ -355,10 +423,15 @@ Finally, based on the detailed prompt you've created, generate a 'NEGATIVE PROMP
         };
     }
 
+    contents.push({ text: masterPrompt });
+    if (styleImage) {
+        contents.push({ inlineData: { mimeType: styleImage.mimeType, data: styleImage.base64 } });
+    }
+
     try {
       const response = await this.ai.models.generateContent({
         model: model,
-        contents: masterPrompt,
+        contents: { parts: contents },
         config: config
       });
       return response.text.trim();
@@ -368,48 +441,55 @@ Finally, based on the detailed prompt you've created, generate a 'NEGATIVE PROMP
     }
   }
 
-  async generateArticulatedPrompt(subject: string, outputType: 'video' | 'image', cameraShots: string[], format: 'text' | 'json'): Promise<string> {
+  async refinePrompt(originalSubject: string, currentPrompt: string, instruction: string, framework: 'cinematic' | 'articulated' | 'photoreal', format: 'text' | 'json'): Promise<string> {
     const model = 'gemini-2.5-flash';
-    
-    const cameraShotsInstruction = cameraShots.length > 0
-    ? `\nCrucially, you MUST incorporate the following specific camera shots into the 'cinematic_staging_mastery' section. Blend them naturally with other camera work descriptions: ${cameraShots.join(', ')}.`
-    : '';
+    let schema: object;
+    let schemaName: string;
+
+    if (framework === 'cinematic') {
+        schema = cinematicSchema;
+        schemaName = 'CINEMATIC';
+    } else if (framework === 'articulated') {
+        schema = articulatedSchema;
+        schemaName = 'ARTICULATED';
+    } else {
+        schema = photorealSchema;
+        schemaName = 'PHOTOREAL';
+    }
     
     let masterPrompt: string;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let config: any;
-    
+
     if (format === 'json') {
         masterPrompt = `
-You are an expert AI animation prompt engineer. Your task is to take a simple subject and expand it into a detailed, high-quality animation prompt using the ARTICULATED framework.
-The final output will be an **${outputType.toUpperCase()}**. All sections must be filled out with this target medium in mind.
-- If the target is a VIDEO, describe fluid animation, timing, and character psychology through movement over time.
-- If the target is an IMAGE, describe a single, perfectly captured frame of animation, emphasizing dynamic posing, expressive character states, and storytelling within a still composition.
-${cameraShotsInstruction}
-Generate a JSON object that adheres to the provided schema. The JSON keys must be in snake_case.
-Fill out a value for every required property in the schema.
-Be creative, detailed, and evocative, focusing on principles of animation.
-Finally, based on the detailed prompt you've created, generate a 'negative_prompt' that lists potential pitfalls or unwanted elements to ensure a high-quality result.
+You are an AI prompt engineer. You previously generated a prompt for a user. Now, they have provided a refinement instruction.
+Your task is to regenerate the entire prompt, incorporating the user's changes, while maintaining the original structure and detail.
 
-**Subject:** "${subject}"
+- **Original Subject:** "${originalSubject}"
+- **Previously Generated Prompt (JSON):** \`\`\`json\n${currentPrompt}\n\`\`\`
+- **User's Refinement Instruction:** "${instruction}"
+
+**Action:**
+Regenerate the complete JSON object according to the ${schemaName} schema. The new prompt must seamlessly integrate the refinement instruction. Do not just describe the change; output the full, updated JSON prompt.
 `;
         config = {
             temperature: 0.5,
             topP: 0.95,
             responseMimeType: "application/json",
-            responseSchema: articulatedSchema
+            responseSchema: schema
         };
     } else { // format === 'text'
         masterPrompt = `
-You are an expert AI animation prompt engineer. Your task is to take a simple subject and expand it into a detailed, high-quality animation prompt using the ARTICULATED framework.
-The final output will be an **${outputType.toUpperCase()}**.
-- If the target is a VIDEO, describe fluid animation, timing, and character psychology through movement over time.
-- If the target is an IMAGE, describe a single, perfectly captured frame of animation, emphasizing dynamic posing, expressive character states, and storytelling within a still composition.
-${cameraShotsInstruction}
-Generate a formatted plain text output. For each component of the ARTICULATED framework, use the component name as a capitalized header (e.g., 'AESTHETIC FOUNDATION LAYER:') followed by the content. Do NOT output a JSON object.
-Finally, based on the detailed prompt you've created, generate a 'NEGATIVE PROMPT' section that lists potential pitfalls or unwanted elements to ensure a high-quality result.
+You are an AI prompt engineer. You previously generated a prompt for a user. Now, they have provided a refinement instruction.
+Your task is to regenerate the entire prompt, incorporating the user's changes, while maintaining the original structure and detail.
 
-**Subject:** "${subject}"
+- **Original Subject:** "${originalSubject}"
+- **Previously Generated Prompt (Text):** \`\`\`\n${currentPrompt}\n\`\`\`
+- **User's Refinement Instruction:** "${instruction}"
+
+**Action:**
+Regenerate the complete formatted plain text prompt according to the ${schemaName} framework. The new prompt must seamlessly integrate the refinement instruction. Do not just describe the change; output the full, updated text prompt with capitalized headers for each section.
 `;
         config = {
             temperature: 0.5,
@@ -417,78 +497,66 @@ Finally, based on the detailed prompt you've created, generate a 'NEGATIVE PROMP
         };
     }
 
-
     try {
-      const response = await this.ai.models.generateContent({
-        model: model,
-        contents: masterPrompt,
-        config: config
-      });
-      return response.text.trim();
+        const response = await this.ai.models.generateContent({
+            model: model,
+            contents: masterPrompt,
+            config: config
+        });
+        return response.text.trim();
     } catch (error) {
-      console.error('Error calling Gemini API:', error);
-      throw new Error('Failed to generate prompt from Gemini API.');
+        console.error('Error calling Gemini API for refinement:', error);
+        throw new Error('Failed to refine prompt from Gemini API.');
     }
   }
 
-  async generatePhotorealPrompt(subject: string, outputType: 'video' | 'image', cameraShots: string[], format: 'text' | 'json'): Promise<string> {
+  async generateStoryboard(scene: string): Promise<string> {
     const model = 'gemini-2.5-flash';
+    const masterPrompt = `
+You are a storyboard artist and screenwriter. Based on the following scene description, generate a sequence of 3-5 cinematic shots. For each shot, provide a detailed description and a transition to the next shot. Output as a JSON array that strictly adheres to the provided schema.
 
-    const cameraShotsInstruction = cameraShots.length > 0
-    ? `\nCrucially, you MUST incorporate the following specific camera shots into the 'studio_lighting_and_cinematography' section. Blend them naturally with other camera work descriptions: ${cameraShots.join(', ')}.`
-    : '';
-    
-    let masterPrompt: string;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let config: any;
-
-    if (format === 'json') {
-        masterPrompt = `
-You are an expert creative director for high-end CGI product commercials. Your task is to take a product subject and expand it into a detailed, photorealistic 3D commercial concept using the PHOTOREAL framework.
-The final output will be an **${outputType.toUpperCase()}**. All sections must be filled out with this target medium in mind.
-- If the target is a VIDEO, describe elegant motion, physics simulations, and a narrative that unfolds over a few seconds.
-- If the target is an IMAGE, describe a single, hyper-detailed hero shot of the product, focusing on materials, lighting, and an impossibly perfect moment (e.g., a liquid splash frozen in time).
-${cameraShotsInstruction}
-Generate a JSON object that adheres to the provided schema. The JSON keys must be in snake_case.
-Fill out a value for every required property in the schema. The output must be hyper-detailed, sophisticated, and visually stunning, focusing on achieving ultimate realism and a premium feel.
-Finally, based on the detailed prompt you've created, generate a 'negative_prompt' that lists potential pitfalls or unwanted elements to ensure a high-quality result.
-
-**Product Subject:** "${subject}"
+**Scene Description:** "${scene}"
 `;
-        config = {
-            temperature: 0.5,
-            topP: 0.95,
-            responseMimeType: "application/json",
-            responseSchema: photorealSchema
-        };
-    } else { // format === 'text'
-        masterPrompt = `
-You are an expert creative director for high-end CGI product commercials. Your task is to take a product subject and expand it into a detailed, photorealistic 3D commercial concept using the PHOTOREAL framework.
-The final output will be an **${outputType.toUpperCase()}**.
-- If the target is a VIDEO, describe elegant motion, physics simulations, and a narrative that unfolds over a few seconds.
-- If the target is an IMAGE, describe a single, hyper-detailed hero shot of the product, focusing on materials, lighting, and an impossibly perfect moment (e.g., a liquid splash frozen in time).
-${cameraShotsInstruction}
-Generate a formatted plain text output. For each component of the PHOTOREAL framework, use the component name as a capitalized header (e.g., 'PRODUCT ESSENCE AND BRANDING:') followed by the content. Do NOT output a JSON object.
-Finally, based on the detailed prompt you've created, generate a 'NEGATIVE PROMPT' section that lists potential pitfalls or unwanted elements to ensure a high-quality result.
-
-**Product Subject:** "${subject}"
-`;
-        config = {
-            temperature: 0.5,
-            topP: 0.95
-        };
-    }
-
     try {
       const response = await this.ai.models.generateContent({
         model: model,
         contents: masterPrompt,
-        config: config
+        config: {
+            temperature: 0.6,
+            topP: 0.95,
+            responseMimeType: "application/json",
+            responseSchema: storyboardSchema
+        }
       });
       return response.text.trim();
     } catch (error) {
-      console.error('Error calling Gemini API:', error);
-      throw new Error('Failed to generate prompt from Gemini API.');
+      console.error('Error calling Gemini API for storyboard:', error);
+      throw new Error('Failed to generate storyboard from Gemini API.');
+    }
+  }
+
+  async generateCharacterPacket(description: string): Promise<string> {
+    const model = 'gemini-2.5-flash';
+    const masterPrompt = `
+You are a character designer and concept artist. Based on the user's description, create a detailed Character Consistency Packet. This packet should be a JSON object containing exhaustive details that can be used to maintain character consistency across multiple AI-generated scenes. Fill out every field in the provided schema with rich, descriptive detail.
+
+**Character Description:** "${description}"
+`;
+    try {
+      const response = await this.ai.models.generateContent({
+        model: model,
+        contents: masterPrompt,
+        config: {
+            temperature: 0.5,
+            topP: 0.95,
+            responseMimeType: "application/json",
+            responseSchema: characterPacketSchema
+        }
+      });
+      return response.text.trim();
+    } catch (error) {
+      console.error('Error calling Gemini API for character packet:', error);
+      throw new Error('Failed to generate character packet from Gemini API.');
     }
   }
 

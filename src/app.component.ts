@@ -1,10 +1,10 @@
 import { Component, ChangeDetectionStrategy, signal, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { GeminiService, PromptSection } from './services/gemini.service';
+import { GeminiService, PromptSection, AudioInputs } from './services/gemini.service';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { ProGuideComponent } from './pro-guide/pro-guide.component';
 
-type FrameworkType = 'cinematic' | 'articulated' | 'photoreal' | 'pro-guide' | 'logo-reveal' | 'transformation';
+type FrameworkType = 'cinematic' | 'articulated' | 'photoreal' | 'pro-guide' | 'logo-reveal' | 'transformation' | 'storyboard' | 'character';
 export type CoPilotFramework = 'cinematic' | 'articulated' | 'photoreal';
 
 @Component({
@@ -55,6 +55,19 @@ export class AppComponent {
   // Signals for Transformation Framework
   sourceSubject = signal('');
   targetSubject = signal('');
+  
+  // New Signals for implemented features
+  storyboardScene = signal('');
+  storyboardOutput = signal<string | null>(null);
+  characterDescription = signal('');
+  characterPacket = signal<string | null>(null);
+  styleReferenceImage = signal<File | null>(null);
+  styleReferenceImagePreview = signal<string | null>(null);
+  refinementInstruction = signal('');
+  isRefining = signal(false);
+  audioMood = signal('');
+  audioSfx = signal('');
+  audioMusic = signal('');
 
   readonly cameraShots = [
     { name: 'Aerial Shot (Helicopter Shot, Drone Shot)', description: 'A shot taken from high above to show expansive views.' },
@@ -168,6 +181,28 @@ export class AppComponent {
     }
   });
 
+  storyboardJson = computed(() => {
+    const jsonString = this.storyboardOutput();
+    if (!jsonString) return null;
+    try {
+        const jsonObj = JSON.parse(jsonString);
+        return JSON.stringify(jsonObj, null, 2);
+    } catch (e) {
+        return jsonString;
+    }
+  });
+
+  characterPacketJson = computed(() => {
+    const jsonString = this.characterPacket();
+    if (!jsonString) return null;
+    try {
+        const jsonObj = JSON.parse(jsonString);
+        return JSON.stringify(jsonObj, null, 2);
+    } catch (e) {
+        return jsonString;
+    }
+  });
+
   activePromptSections = computed<PromptSection[]>(() => {
     return this.promptSections();
   });
@@ -187,6 +222,13 @@ export class AppComponent {
     this.logoRevealOutput.set(null);
     this.sourceSubject.set('');
     this.targetSubject.set('');
+    this.storyboardScene.set('');
+    this.storyboardOutput.set(null);
+    this.characterDescription.set('');
+    this.characterPacket.set(null);
+    this.styleReferenceImage.set(null);
+    this.styleReferenceImagePreview.set(null);
+    this.refinementInstruction.set('');
   }
   
   selectOutputType(type: 'video' | 'image'): void {
@@ -241,7 +283,6 @@ export class AppComponent {
       }
     }
 
-
     this.isLoading.set(true);
     this.error.set(null);
     this.generatedPrompt.set(null);
@@ -262,15 +303,32 @@ export class AppComponent {
           const outputType = this.outputType();
           const subject = this.subject();
           const cameraShots = this.showAdvanced() ? this.selectedCameraShots() : [];
+          
+          let styleImage: { base64: string, mimeType: string } | undefined;
+          if (this.styleReferenceImage()) {
+            styleImage = {
+              base64: await this.fileToBase64(this.styleReferenceImage() as File),
+              mimeType: (this.styleReferenceImage() as File).type
+            };
+          }
+
+          let audioInputs: AudioInputs | undefined;
+          if (this.showAdvanced() && (this.audioMood() || this.audioSfx() || this.audioMusic())) {
+            audioInputs = {
+              mood: this.audioMood(),
+              sfx: this.audioSfx(),
+              music: this.audioMusic()
+            };
+          }
 
           let promptGenerator: Promise<string> | undefined;
 
           if (activeFramework === 'cinematic') {
-            promptGenerator = this.geminiService.generateCinematicPrompt(subject, outputType, cameraShots, format);
+            promptGenerator = this.geminiService.generateCinematicPrompt(subject, outputType, cameraShots, format, styleImage, audioInputs);
           } else if (activeFramework === 'articulated') {
-            promptGenerator = this.geminiService.generateArticulatedPrompt(subject, outputType, cameraShots, format);
+            promptGenerator = this.geminiService.generateArticulatedPrompt(subject, outputType, cameraShots, format, styleImage, audioInputs);
           } else if (activeFramework === 'photoreal') {
-            promptGenerator = this.geminiService.generatePhotorealPrompt(subject, outputType, cameraShots, format);
+            promptGenerator = this.geminiService.generatePhotorealPrompt(subject, outputType, cameraShots, format, styleImage, audioInputs);
           }
           
           if (promptGenerator) {
@@ -284,6 +342,36 @@ export class AppComponent {
       console.error(e);
     } finally {
       this.isLoading.set(false);
+    }
+  }
+
+  async onRefine(): Promise<void> {
+    const instruction = this.refinementInstruction().trim();
+    const currentPrompt = this.generatedPrompt();
+    const framework = this.activeFramework();
+
+    if (!instruction || !currentPrompt || this.isRefining() || !(framework === 'cinematic' || framework === 'articulated' || framework === 'photoreal')) {
+      return;
+    }
+
+    this.isRefining.set(true);
+    this.error.set(null);
+
+    try {
+      const result = await this.geminiService.refinePrompt(
+        this.subject(),
+        currentPrompt,
+        instruction,
+        framework,
+        this.promptFormat()
+      );
+      this.generatedPrompt.set(result);
+      this.refinementInstruction.set(''); // Clear input after successful refinement
+    } catch (e) {
+      this.error.set('An error occurred while refining the prompt.');
+      console.error(e);
+    } finally {
+      this.isRefining.set(false);
     }
   }
 
@@ -369,6 +457,29 @@ export class AppComponent {
       reader.readAsDataURL(file);
     }
   }
+  
+  onStyleFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files[0]) {
+      const file = input.files[0];
+      if (!file.type.startsWith('image/')) {
+        this.error.set('Invalid file type. Please upload an image.');
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        this.error.set('File is too large. Please upload an image under 5MB.');
+        return;
+      }
+      this.error.set(null);
+      this.styleReferenceImage.set(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        this.styleReferenceImagePreview.set(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
 
   private fileToBase64(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
@@ -404,25 +515,72 @@ export class AppComponent {
       this.isLoading.set(false);
     }
   }
+  
+  async onGenerateStoryboard(): Promise<void> {
+    if (!this.storyboardScene().trim() || this.isLoading()) {
+      return;
+    }
+    this.isLoading.set(true);
+    this.error.set(null);
+    this.storyboardOutput.set(null);
+    try {
+      const result = await this.geminiService.generateStoryboard(this.storyboardScene());
+      this.storyboardOutput.set(result);
+    } catch (e) {
+      this.error.set('An error occurred while generating the storyboard.');
+      console.error(e);
+    } finally {
+      this.isLoading.set(false);
+    }
+  }
+
+  async onGenerateCharacterPacket(): Promise<void> {
+    if (!this.characterDescription().trim() || this.isLoading()) {
+      return;
+    }
+    this.isLoading.set(true);
+    this.error.set(null);
+    this.characterPacket.set(null);
+    try {
+      const result = await this.geminiService.generateCharacterPacket(this.characterDescription());
+      this.characterPacket.set(result);
+    } catch (e) {
+      this.error.set('An error occurred while generating the character packet.');
+      console.error(e);
+    } finally {
+      this.isLoading.set(false);
+    }
+  }
 
 
   copyToClipboard(): void {
     let textToCopy: string | null = null;
 
-    if (this.activeFramework() === 'transformation') {
-      textToCopy = this.generatedPrompt();
-    } else if (this.activeFramework() === 'logo-reveal') {
+    switch (this.activeFramework()) {
+      case 'transformation':
+        textToCopy = this.generatedPrompt();
+        break;
+      case 'logo-reveal':
         textToCopy = this.logoRevealJson();
-    } else if (this.aiCoPilotEnabled()) {
-        textToCopy = this.coPilotOutput(); // coPilotOutput can be text or json string now
-        if (this.promptFormat() === 'json') {
-          textToCopy = this.coPilotJson();
-        }
-    } else {
-        if (this.promptFormat() === 'text' || this.outputViewMode() === 'text') {
-            textToCopy = this.promptSections().map(s => `${s.title}:\n${s.content}`).join('\n\n');
+        break;
+      case 'storyboard':
+        textToCopy = this.storyboardJson();
+        break;
+      case 'character':
+        textToCopy = this.characterPacketJson();
+        break;
+      default:
+        if (this.aiCoPilotEnabled()) {
+            textToCopy = this.coPilotOutput();
+            if (this.promptFormat() === 'json') {
+              textToCopy = this.coPilotJson();
+            }
         } else {
-            textToCopy = this.jsonPrompt();
+            if (this.promptFormat() === 'text' || this.outputViewMode() === 'text') {
+                textToCopy = this.promptSections().map(s => `${s.title}:\n${s.content}`).join('\n\n');
+            } else {
+                textToCopy = this.jsonPrompt();
+            }
         }
     }
       
