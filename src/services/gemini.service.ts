@@ -559,8 +559,6 @@ Output Rules:
 
   private async generateFullPrompt(subject: string, outputType: 'video' | 'image', cameraShots: string[], format: 'text' | 'json', framework: 'cinematic' | 'articulated' | 'photoreal', schema: object, styleImage?: { base64: string, mimeType: string }, audioInputs?: AudioInputs, concise?: boolean): Promise<string> {
     const model = 'gemini-2.5-flash';
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const contents: any[] = [];
     
     let cameraField = 'mechanical_camera_direction';
     if (framework === 'articulated') cameraField = 'cinematic_staging_mastery';
@@ -651,15 +649,23 @@ Finally, based on the detailed prompt you've created, generate a 'NEGATIVE PROMP
         };
     }
 
-    contents.push({ text: masterPrompt });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let requestContents: any;
     if (styleImage) {
-        contents.push({ inlineData: { mimeType: styleImage.mimeType, data: styleImage.base64 } });
+        requestContents = { 
+            parts: [
+                { text: masterPrompt },
+                { inlineData: { mimeType: styleImage.mimeType, data: styleImage.base64 } }
+            ] 
+        };
+    } else {
+        requestContents = masterPrompt;
     }
 
     try {
       const response = await this.ai.models.generateContent({
         model: model,
-        contents: { parts: contents },
+        contents: requestContents,
         config: config
       });
       return response.text.trim();
@@ -841,8 +847,6 @@ ${userInputPrompt}
 
   async generateMythPrompt(subject: string, format: 'text' | 'json', styleImage?: { base64: string, mimeType: string }, concise?: boolean): Promise<string> {
     const model = 'gemini-2.5-flash';
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const contents: any[] = [];
     
     const styleInstruction = styleImage 
     ? "\nAdditionally, you MUST analyze the provided style reference image. Infuse its aesthetic (color palette, lighting, texture, mood) into every aspect of the generated prompt, especially the 'integrated_style_palette' and 'atmospheric_lighting_design' sections."
@@ -906,15 +910,23 @@ Generate a formatted plain text output. For each component of the framework, use
         };
     }
 
-    contents.push({ text: masterPrompt });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let requestContents: any;
     if (styleImage) {
-        contents.push({ inlineData: { mimeType: styleImage.mimeType, data: styleImage.base64 } });
+        requestContents = {
+            parts: [
+                { text: masterPrompt },
+                { inlineData: { mimeType: styleImage.mimeType, data: styleImage.base64 } }
+            ]
+        };
+    } else {
+        requestContents = masterPrompt;
     }
 
     try {
       const response = await this.ai.models.generateContent({
         model: model,
-        contents: { parts: contents },
+        contents: requestContents,
         config: config
       });
       return response.text.trim();
@@ -926,9 +938,7 @@ Generate a formatted plain text output. For each component of the framework, use
   
   async generateMythPromptWithCoPilot(subject: string, styleImage?: { base64: string, mimeType: string }): Promise<string> {
     const model = 'gemini-2.5-flash';
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const contents: any[] = [];
-
+    
     const coPilotSchema = {
       type: Type.OBJECT,
       properties: {
@@ -1001,15 +1011,23 @@ ${styleInstruction}
         responseSchema: coPilotSchema
     };
 
-    contents.push({ text: masterPrompt });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let requestContents: any;
     if (styleImage) {
-        contents.push({ inlineData: { mimeType: styleImage.mimeType, data: styleImage.base64 } });
+        requestContents = {
+            parts: [
+                { text: masterPrompt },
+                { inlineData: { mimeType: styleImage.mimeType, data: styleImage.base64 } }
+            ]
+        };
+    } else {
+        requestContents = masterPrompt;
     }
 
     try {
       const response = await this.ai.models.generateContent({
         model: model,
-        contents: { parts: contents },
+        contents: requestContents,
         config: config
       });
       return response.text.trim();
