@@ -1,10 +1,10 @@
 import { Component, ChangeDetectionStrategy, signal, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { GeminiService, MotionPromptParams, PromptSection, AudioInputs } from './services/gemini.service';
+import { GeminiService, MotionPromptParams, PromptSection, AudioInputs, ActionPromptParams } from './services/gemini.service';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { ProGuideComponent } from './pro-guide/pro-guide.component';
 
-type FrameworkType = 'cinematic' | 'articulated' | 'photoreal' | 'pro-guide' | 'logo-reveal' | 'transformation' | 'storyboard' | 'character' | 'motion';
+type FrameworkType = 'cinematic' | 'articulated' | 'photoreal' | 'pro-guide' | 'logo-reveal' | 'transformation' | 'storyboard' | 'character' | 'motion' | 'action';
 export type CoPilotFramework = 'cinematic' | 'articulated' | 'photoreal';
 
 type CoPilotOutput = {
@@ -119,6 +119,34 @@ export class AppComponent {
   motionParallax = signal({ layers: 4, separation: 'moderate' });
   motionTiltShift = signal({ angle: '0 degrees', blur: 'strong' });
   motionPromptOutput = signal<string | null>(null);
+
+  // Signals for Action Framework
+  showActionOptional = signal(false);
+  actionNarrativeCoreGoal = signal('Recover stolen data drive');
+  actionNarrativeCoreStakes = signal('The data exposes corporate corruption; if it gets to the press, the protagonist\'s whistleblower will be killed.');
+  actionNarrativeCoreConsequence = signal('If the protagonist fails, the antagonist succeeds in silencing the whistleblower and covering their tracks.');
+  actionProtagonistName = signal('Ethan Hunt');
+  actionProtagonistTrait = signal('Resourceful');
+  actionProtagonistFightStyle = signal('Improvisational Brawler');
+  actionAntagonistName = signal('The White Widow');
+  actionAntagonistTrait = signal('Graceful and Calculating');
+  actionAntagonistFightStyle = signal('Martial Artist');
+  actionRelationship = signal('Clash of opposing ideologies and past history.');
+  actionSetting = signal('Abandoned oil rig');
+  actionAtmosphere = signal('Stormy night, torrential rain, high winds, lightning flashes');
+  actionKeyObjects = signal('crates, oil drums, spilled chemical containers');
+  actionCameraAngle = signal('Low-angle for menace');
+  actionLensChoice = signal('Telephoto for impact compression');
+  actionLighting = signal('High-contrast chiaroscuro');
+  actionOpeningRhythm = signal('Slow, tense build-up');
+  actionClimaxRhythm = signal('Fast, frenetic cutting');
+  actionTransitions = signal('quick cuts, handheld follow-moves');
+  actionSpecialEffects = signal('slow-motion for key blows');
+  actionAmbientSounds = signal('Howling wind, crashing waves, distant thunder');
+  actionImpactSounds = signal('Squelching wet fabrics, dull thuds on armor, metallic clangs');
+  actionSoundDesignNotes = signal('Delay explosion sounds to match visual delay for realism');
+  actionTechnicalNotes = signal('Ensure all primary stunts are performed by the actors to maintain authenticity. Use a mix of wide and medium shots to establish geography before closing in for detail.');
+  actionPromptOutput = signal<string | null>(null);
 
   readonly cameraShots = [
     { name: 'Aerial Shot (Helicopter Shot, Drone Shot)', description: 'A shot taken from high above to show expansive views.' },
@@ -268,6 +296,17 @@ export class AppComponent {
     }
   });
 
+  actionPromptJson = computed(() => {
+    const jsonString = this.actionPromptOutput();
+    if (!jsonString) return null;
+    try {
+        const jsonObj = JSON.parse(jsonString);
+        return JSON.stringify(jsonObj, null, 2);
+    } catch (e) {
+        return jsonString;
+    }
+  });
+
   activePromptSections = computed<PromptSection[]>(() => {
     return this.promptSections();
   });
@@ -298,6 +337,8 @@ export class AppComponent {
     this.selectedMotionCategory.set('');
     this.selectedMotionType.set('');
     this.motionPromptOutput.set(null);
+    this.actionPromptOutput.set(null);
+    this.showActionOptional.set(false);
   }
   
   selectOutputType(type: 'video' | 'image'): void {
@@ -661,6 +702,78 @@ export class AppComponent {
     }
   }
 
+  async onGenerateActionPrompt(): Promise<void> {
+    const mandatoryFields = [
+      this.actionNarrativeCoreGoal(), this.actionNarrativeCoreStakes(), this.actionNarrativeCoreConsequence(),
+      this.actionProtagonistName(), this.actionProtagonistTrait(), this.actionProtagonistFightStyle(),
+      this.actionAntagonistName(), this.actionAntagonistTrait(), this.actionAntagonistFightStyle(),
+      this.actionRelationship(), this.actionSetting(), this.actionAtmosphere(),
+    ];
+    if (this.isLoading() || mandatoryFields.some(f => !f.trim())) {
+        return;
+    }
+
+    this.isLoading.set(true);
+    this.error.set(null);
+    this.actionPromptOutput.set(null);
+
+    try {
+      const params: ActionPromptParams = {
+        narrativeCore: {
+          goal: this.actionNarrativeCoreGoal(),
+          stakes: this.actionNarrativeCoreStakes(),
+          consequence: this.actionNarrativeCoreConsequence()
+        },
+        characterDynamics: {
+          protagonist: {
+            name: this.actionProtagonistName(),
+            trait: this.actionProtagonistTrait(),
+            fight_style: this.actionProtagonistFightStyle()
+          },
+          antagonist: {
+            name: this.actionAntagonistName(),
+            trait: this.actionAntagonistTrait(),
+            fight_style: this.actionAntagonistFightStyle()
+          },
+          relationship: this.actionRelationship()
+        },
+        environmentalContext: {
+          setting: this.actionSetting(),
+          atmosphere: this.actionAtmosphere(),
+          keyObjects: this.actionKeyObjects().split(',').map(s => s.trim()).filter(Boolean)
+        }
+      };
+
+      if (this.showActionOptional()) {
+        params.visualStyle = {
+          camera_angle: this.actionCameraAngle(),
+          lens_choice: this.actionLensChoice(),
+          lighting: this.actionLighting()
+        };
+        params.pacingAndRhythm = {
+          opening_rhythm: this.actionOpeningRhythm(),
+          climax_rhythm: this.actionClimaxRhythm(),
+          transitions: this.actionTransitions().split(',').map(s => s.trim()).filter(Boolean),
+          special_effects: this.actionSpecialEffects().split(',').map(s => s.trim()).filter(Boolean)
+        };
+        params.soundDesign = {
+          ambient_sounds: this.actionAmbientSounds(),
+          impact_sounds: this.actionImpactSounds(),
+          sound_design: this.actionSoundDesignNotes()
+        };
+        params.technicalNotes = this.actionTechnicalNotes();
+      }
+      
+      const result = await this.geminiService.generateActionPrompt(params);
+      this.actionPromptOutput.set(result);
+    } catch (e) {
+      this.error.set('An error occurred while generating the action prompt.');
+      console.error(e);
+    } finally {
+      this.isLoading.set(false);
+    }
+  }
+
   // Methods to fix template errors by handling updates in the component
   updateMotionSpeedRamp(field: 'start' | 'end' | 'point' | 'curve', event: Event): void {
     const value = (event.target as HTMLInputElement).value;
@@ -697,7 +810,7 @@ export class AppComponent {
   }
 
   updateMotionTiltShift(field: 'angle' | 'blur', event: Event): void {
-    const value = (event.target as HTMLInputElement).value;
+    const value = (event.target as HTMLInputElement | HTMLSelectElement).value;
     this.motionTiltShift.update(current => ({ ...current, [field]: value }));
   }
 
@@ -719,6 +832,9 @@ export class AppComponent {
         break;
       case 'motion':
         textToCopy = this.motionPromptOutput();
+        break;
+      case 'action':
+        textToCopy = this.actionPromptJson();
         break;
       default:
         if (this.aiCoPilotEnabled()) {

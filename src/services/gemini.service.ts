@@ -25,6 +25,20 @@ export interface MotionPromptParams {
   motionSpecific?: any;
 }
 
+export interface ActionPromptParams {
+  narrativeCore: { goal: string; stakes: string; consequence: string; };
+  characterDynamics: {
+    protagonist: { name: string; trait: string; fight_style: string; };
+    antagonist: { name: string; trait: string; fight_style: string; };
+    relationship: string;
+  };
+  environmentalContext: { setting: string; atmosphere: string; keyObjects: string[]; };
+  visualStyle?: { camera_angle: string; lens_choice: string; lighting: string; };
+  pacingAndRhythm?: { opening_rhythm: string; climax_rhythm: string; transitions: string[]; special_effects: string[]; };
+  soundDesign?: { ambient_sounds: string; impact_sounds: string; sound_design: string; };
+  technicalNotes?: string;
+}
+
 const cinematicSchema = {
   type: Type.OBJECT,
   properties: {
@@ -121,6 +135,87 @@ const characterPacketSchema = {
   required: ['name', 'physical_description', 'wardrobe_style', 'personality_and_mannerisms', 'signature_prop']
 };
 
+const actionSchema = {
+    type: Type.OBJECT,
+    properties: {
+        narrative_core: {
+            type: Type.OBJECT,
+            description: "Defines the central story purpose of the scene.",
+            properties: {
+                goal: { type: Type.STRING, description: "The primary objective of the protagonist in the scene." },
+                stakes: { type: Type.STRING, description: "What is at risk for the protagonist and others." },
+                consequence: { type: Type.STRING, description: "The outcome if the protagonist fails." }
+            },
+            required: ['goal', 'stakes', 'consequence']
+        },
+        character_dynamics: {
+            type: Type.OBJECT,
+            description: "Describes protagonists, antagonists, and their relationships.",
+            properties: {
+                protagonist: {
+                    type: Type.OBJECT,
+                    properties: {
+                        name: { type: Type.STRING },
+                        trait: { type: Type.STRING, description: "A key personality trait." },
+                        fight_style: { type: Type.STRING }
+                    },
+                    required: ['name', 'trait', 'fight_style']
+                },
+                antagonist: {
+                    type: Type.OBJECT,
+                    properties: {
+                        name: { type: Type.STRING },
+                        trait: { type: Type.STRING, description: "A key personality trait." },
+                        fight_style: { type: Type.STRING }
+                    },
+                    required: ['name', 'trait', 'fight_style']
+                },
+                relationship: { type: Type.STRING, description: "The history or dynamic between the protagonist and antagonist." }
+            },
+            required: ['protagonist', 'antagonist', 'relationship']
+        },
+        environmental_context: {
+            type: Type.OBJECT,
+            description: "Establishes the setting and its key properties.",
+            properties: {
+                setting: { type: Type.STRING },
+                atmosphere: { type: Type.STRING },
+                key_objects: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Interactive objects in the environment." }
+            },
+            required: ['setting', 'atmosphere', 'key_objects']
+        },
+        visual_style: {
+            type: Type.OBJECT,
+            description: "Specifies camera, lens, and lighting choices.",
+            properties: {
+                camera_angle: { type: Type.STRING },
+                lens_choice: { type: Type.STRING },
+                lighting: { type: Type.STRING }
+            }
+        },
+        pacing_and_rhythm: {
+            type: Type.OBJECT,
+            description: "Dictates the editing style and sequence flow.",
+            properties: {
+                opening_rhythm: { type: Type.STRING },
+                climax_rhythm: { type: Type.STRING },
+                transitions: { type: Type.ARRAY, items: { type: Type.STRING } },
+                special_effects: { type: Type.ARRAY, items: { type: Type.STRING } }
+            }
+        },
+        sound_design: {
+            type: Type.OBJECT,
+            description: "Details audio elements to enhance realism and mood.",
+            properties: {
+                ambient_sounds: { type: Type.STRING },
+                impact_sounds: { type: Type.STRING },
+                sound_design: { type: Type.STRING, description: "Overall notes on the sound design approach." }
+            }
+        },
+        technical_notes: { type: Type.STRING, description: "Provides specific instructions for execution, like stunt work or CGI integration." }
+    },
+    required: ['narrative_core', 'character_dynamics', 'environmental_context']
+};
 
 @Injectable({
   providedIn: 'root',
@@ -647,6 +742,57 @@ You are a character designer and concept artist. Based on the user's description
     } catch (error) {
       console.error('Error calling Gemini API for character packet:', error);
       throw new Error('Failed to generate character packet from Gemini API.');
+    }
+  }
+
+  async generateActionPrompt(params: ActionPromptParams): Promise<string> {
+    const model = 'gemini-2.5-flash';
+
+    let userInputPrompt = 'Based on the following user-provided parameters, generate a complete and detailed JSON prompt. Creatively fill in any unspecified optional details to make the action scene as compelling and cinematic as possible, adhering to Hollywood action movie conventions.\n\n';
+
+    userInputPrompt += '--- MANDATORY PARAMETERS ---\n';
+    userInputPrompt += `Narrative Core:\n- Goal: ${params.narrativeCore.goal}\n- Stakes: ${params.narrativeCore.stakes}\n- Consequence: ${params.narrativeCore.consequence}\n\n`;
+    userInputPrompt += `Character Dynamics:\n- Protagonist: ${params.characterDynamics.protagonist.name} (${params.characterDynamics.protagonist.trait}, ${params.characterDynamics.protagonist.fight_style})\n- Antagonist: ${params.characterDynamics.antagonist.name} (${params.characterDynamics.antagonist.trait}, ${params.characterDynamics.antagonist.fight_style})\n- Relationship: ${params.characterDynamics.relationship}\n\n`;
+    userInputPrompt += `Environmental Context:\n- Setting: ${params.environmentalContext.setting}\n- Atmosphere: ${params.environmentalContext.atmosphere}\n- Key Objects: ${params.environmentalContext.keyObjects.join(', ')}\n\n`;
+
+    if (params.visualStyle || params.pacingAndRhythm || params.soundDesign || params.technicalNotes) {
+        userInputPrompt += '--- OPTIONAL PARAMETERS ---\n';
+        if (params.visualStyle && Object.values(params.visualStyle).some(v => v)) {
+            userInputPrompt += `Visual Style:\n- Camera Angle: ${params.visualStyle.camera_angle || 'AI to decide'}\n- Lens Choice: ${params.visualStyle.lens_choice || 'AI to decide'}\n- Lighting: ${params.visualStyle.lighting || 'AI to decide'}\n\n`;
+        }
+        if (params.pacingAndRhythm && Object.values(params.pacingAndRhythm).some(v => Array.isArray(v) ? v.length > 0 : v)) {
+            userInputPrompt += `Pacing & Rhythm:\n- Opening: ${params.pacingAndRhythm.opening_rhythm || 'AI to decide'}\n- Climax: ${params.pacingAndRhythm.climax_rhythm || 'AI to decide'}\n- Transitions: ${params.pacingAndRhythm.transitions.join(', ') || 'AI to decide'}\n- Special Effects: ${params.pacingAndRhythm.special_effects.join(', ') || 'AI to decide'}\n\n`;
+        }
+        if (params.soundDesign && Object.values(params.soundDesign).some(v => v)) {
+            userInputPrompt += `Sound Design:\n- Ambient: ${params.soundDesign.ambient_sounds || 'AI to decide'}\n- Impact: ${params.soundDesign.impact_sounds || 'AI to decide'}\n- Notes: ${params.soundDesign.sound_design || 'AI to decide'}\n\n`;
+        }
+        if (params.technicalNotes) {
+            userInputPrompt += `Technical Notes: ${params.technicalNotes}\n\n`;
+        }
+    }
+    
+    const masterPrompt = `
+You are an expert AI prompt engineer and screenwriter specializing in Hollywood action sequences. Your task is to generate a structured JSON prompt for an AI video generator based on user-provided details.
+You must follow the provided schema precisely and fill out every property, even the optional ones.
+
+${userInputPrompt}
+`;
+
+    try {
+      const response = await this.ai.models.generateContent({
+        model: model,
+        contents: masterPrompt,
+        config: {
+            temperature: 0.7,
+            topP: 0.95,
+            responseMimeType: "application/json",
+            responseSchema: actionSchema
+        }
+      });
+      return response.text.trim();
+    } catch (error) {
+      console.error('Error calling Gemini API for action prompt:', error);
+      throw new Error('Failed to generate action prompt from Gemini API.');
     }
   }
 
