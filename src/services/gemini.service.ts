@@ -110,6 +110,29 @@ const photorealSchema = {
   ]
 };
 
+const mythPromptSchema = {
+  type: Type.OBJECT,
+  properties: {
+    context_foundation: { type: Type.STRING, description: "Intent, emotion, and genre inspired by Black Myth: Wukong." },
+    immersive_scene_setup: { type: Type.STRING, description: "Location inspired by Chinese heritage sites, time, weather, atmosphere." },
+    narrative_subject_definition: { type: Type.STRING, description: "Detailed description of the Hero and Antagonist: physique, attire, aura, martial style." },
+    energetic_action_choreography: { type: Type.STRING, description: "The flow of combat: standoff, flurry, dodges, counters." },
+    mechanical_camera_direction: { type: Type.STRING, description: "Cinematic camera work: shot types, movements, angles." },
+    atmospheric_lighting_design: { type: Type.STRING, description: "Lighting presets like volumetric beams, lantern glow, storm-lit cliffs." },
+    tonal_audio_architecture: { type: Type.STRING, description: "Sound mood: guzheng, taiko drums, silent tension, SFX." },
+    integrated_style_palette: { type: Type.STRING, description: "The hardcoded visual style: hyper-realistic anime, painterly textures, desaturated earth tones, impact glows." },
+    enhancement_modifiers: { type: Type.STRING, description: "Modifiers like +Dynamic camera, +Fluid animation, +High impact physics, +Visceral sound." },
+    negative_prompt: { type: Type.STRING, description: "Elements to avoid: poor anatomy, static camera, cartoonish, low detail." },
+    specs: { type: Type.STRING, description: "Technical specifications: Duration (9s), Resolution (1080p), FPS (30), Aspect Ratio (16:9)." }
+  },
+  required: [
+    'context_foundation', 'immersive_scene_setup', 'narrative_subject_definition',
+    'energetic_action_choreography', 'mechanical_camera_direction', 'atmospheric_lighting_design',
+    'tonal_audio_architecture', 'integrated_style_palette', 'enhancement_modifiers',
+    'negative_prompt', 'specs'
+  ]
+};
+
 const storyboardSchema = {
   type: Type.ARRAY,
   items: {
@@ -522,19 +545,19 @@ Output Rules:
     }
   }
 
-  async generateCinematicPrompt(subject: string, outputType: 'video' | 'image', cameraShots: string[], format: 'text' | 'json', styleImage?: { base64: string, mimeType: string }, audioInputs?: AudioInputs): Promise<string> {
-    return this.generateFullPrompt(subject, outputType, cameraShots, format, 'cinematic', cinematicSchema, styleImage, audioInputs);
+  async generateCinematicPrompt(subject: string, outputType: 'video' | 'image', cameraShots: string[], format: 'text' | 'json', styleImage?: { base64: string, mimeType: string }, audioInputs?: AudioInputs, concise?: boolean): Promise<string> {
+    return this.generateFullPrompt(subject, outputType, cameraShots, format, 'cinematic', cinematicSchema, styleImage, audioInputs, concise);
   }
 
-  async generateArticulatedPrompt(subject: string, outputType: 'video' | 'image', cameraShots: string[], format: 'text' | 'json', styleImage?: { base64: string, mimeType: string }, audioInputs?: AudioInputs): Promise<string> {
-    return this.generateFullPrompt(subject, outputType, cameraShots, format, 'articulated', articulatedSchema, styleImage, audioInputs);
+  async generateArticulatedPrompt(subject: string, outputType: 'video' | 'image', cameraShots: string[], format: 'text' | 'json', styleImage?: { base64: string, mimeType: string }, audioInputs?: AudioInputs, concise?: boolean): Promise<string> {
+    return this.generateFullPrompt(subject, outputType, cameraShots, format, 'articulated', articulatedSchema, styleImage, audioInputs, concise);
   }
 
-  async generatePhotorealPrompt(subject: string, outputType: 'video' | 'image', cameraShots: string[], format: 'text' | 'json', styleImage?: { base64: string, mimeType: string }, audioInputs?: AudioInputs): Promise<string> {
-    return this.generateFullPrompt(subject, outputType, cameraShots, format, 'photoreal', photorealSchema, styleImage, audioInputs);
+  async generatePhotorealPrompt(subject: string, outputType: 'video' | 'image', cameraShots: string[], format: 'text' | 'json', styleImage?: { base64: string, mimeType: string }, audioInputs?: AudioInputs, concise?: boolean): Promise<string> {
+    return this.generateFullPrompt(subject, outputType, cameraShots, format, 'photoreal', photorealSchema, styleImage, audioInputs, concise);
   }
 
-  private async generateFullPrompt(subject: string, outputType: 'video' | 'image', cameraShots: string[], format: 'text' | 'json', framework: 'cinematic' | 'articulated' | 'photoreal', schema: object, styleImage?: { base64: string, mimeType: string }, audioInputs?: AudioInputs): Promise<string> {
+  private async generateFullPrompt(subject: string, outputType: 'video' | 'image', cameraShots: string[], format: 'text' | 'json', framework: 'cinematic' | 'articulated' | 'photoreal', schema: object, styleImage?: { base64: string, mimeType: string }, audioInputs?: AudioInputs, concise?: boolean): Promise<string> {
     const model = 'gemini-2.5-flash';
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const contents: any[] = [];
@@ -566,7 +589,27 @@ Output Rules:
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let config: any;
 
-    if (format === 'json') {
+    if (concise) {
+        masterPrompt = `
+You are an expert AI prompt engineer specializing in the ${framework.toUpperCase()} framework. Your task is to take a simple subject and expand it into a single, highly-detailed, and evocative paragraph for AI generation.
+
+**CRITICAL REQUIREMENT:** The final output prompt MUST be EXACTLY 1900 characters long, including all spaces and punctuation. Do not use markdown. Do not add headers or any text besides the prompt itself. This is a strict technical constraint for system compatibility.
+
+**Content Guidelines:**
+- The final output will be an **${outputType.toUpperCase()}**.
+- Weave together all aspects of the ${framework.toUpperCase()} framework (context, scene, subject, action, camera, lighting, sound, style) into one cohesive, flowing paragraph.
+${cameraShotsInstruction}
+${styleInstruction}
+${audioInstruction}
+- Ensure the language is cinematic, descriptive, and powerful.
+
+**Subject:** "${subject}"
+`;
+        config = {
+            temperature: 0.7,
+            topP: 0.95,
+        };
+    } else if (format === 'json') {
         masterPrompt = `
 You are an expert AI prompt engineer specializing in the ${framework.toUpperCase()} framework. Your task is to take a simple subject and expand it into a detailed, high-quality prompt for AI generation.
 The final output will be an **${outputType.toUpperCase()}**. All sections must be filled out with this target medium in mind.
@@ -793,6 +836,186 @@ ${userInputPrompt}
     } catch (error) {
       console.error('Error calling Gemini API for action prompt:', error);
       throw new Error('Failed to generate action prompt from Gemini API.');
+    }
+  }
+
+  async generateMythPrompt(subject: string, format: 'text' | 'json', styleImage?: { base64: string, mimeType: string }, concise?: boolean): Promise<string> {
+    const model = 'gemini-2.5-flash';
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const contents: any[] = [];
+    
+    const styleInstruction = styleImage 
+    ? "\nAdditionally, you MUST analyze the provided style reference image. Infuse its aesthetic (color palette, lighting, texture, mood) into every aspect of the generated prompt, especially the 'integrated_style_palette' and 'atmospheric_lighting_design' sections."
+    : '';
+
+    let masterPrompt: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let config: any;
+
+    const coreInstruction = `You are an expert AI prompt engineer specializing in the cinematic and artistic style of the game **Black Myth: Wukong**. Your task is to take a simple subject and expand it into a detailed, high-quality, structured video prompt. The prompt MUST be filled with rich, evocative language that captures the game's unique aesthetic: a blend of hyper-realism, painterly textures, desaturated earth tones, and traditional Chinese mythology and architecture.
+
+You must generate content for ALL of the following sections, adhering to the spirit of the framework:
+- **Context Foundation:** What is the intent, emotion, and genre?
+- **Immersive Scene Setup:** Describe a location inspired by real Chinese heritage sites.
+- **Narrative Subject Definition:** Detail a Hero and an Antagonist. Be creative with their appearance, attire, aura, and martial style.
+- **Energetic Action Choreography:** Describe the combat sequence.
+- **Mechanical Camera Direction:** Specify dynamic camera shots.
+- **Atmospheric Lighting Design:** Define the lighting.
+- **Tonal Audio Architecture:** Describe the soundscape.
+- **Integrated Style Palette:** This should be fixed to reflect the Wukong style.
+- **Enhancement Modifiers:** Add modifiers like +Dynamic camera, +Fluid animation.
+- **Negative Prompt:** List common pitfalls to avoid.
+- **Specs:** Use standard specs like 9s, 1080p, 30 FPS, 16:9.
+${styleInstruction}
+`;
+
+    if (concise) {
+        masterPrompt = `You are an expert AI prompt engineer specializing in the cinematic and artistic style of the game **Black Myth: Wukong**. Your task is to take a simple subject and expand it into a single, highly-detailed, and evocative paragraph for AI video generation.
+
+**CRITICAL REQUIREMENT:** The final output prompt MUST be EXACTLY 1900 characters long, including all spaces and punctuation. Do not use markdown. Do not add any headers or text besides the prompt itself. This is a strict technical constraint.
+
+**Content Guidelines:**
+- Weave together all aspects of the MythPrompt framework (context, scene, subjects, action, camera, lighting, sound, style) into one cohesive, flowing paragraph.
+- The tone must be dark, mythic, and cinematic, capturing the game's unique aesthetic: hyper-realism, painterly textures, desaturated earth tones, and traditional Chinese mythology.
+${styleInstruction}
+
+**Subject:** "${subject}"`;
+        config = {
+            temperature: 0.7,
+            topP: 0.95,
+        };
+    } else if (format === 'json') {
+        masterPrompt = `${coreInstruction}
+Generate a JSON object that adheres to the provided schema. The JSON keys must be in snake_case. Fill out a value for every required property in the schema.
+
+**Subject:** "${subject}"`;
+        config = {
+            temperature: 0.7,
+            topP: 0.95,
+            responseMimeType: "application/json",
+            responseSchema: mythPromptSchema
+        };
+    } else { // format === 'text'
+        masterPrompt = `${coreInstruction}
+Generate a formatted plain text output. For each component of the framework, use the component name as a capitalized, bolded header (e.g., '**Context Foundation:**') followed by the content. Do NOT output a JSON object.
+
+**Subject:** "${subject}"`;
+        config = {
+            temperature: 0.7,
+            topP: 0.95
+        };
+    }
+
+    contents.push({ text: masterPrompt });
+    if (styleImage) {
+        contents.push({ inlineData: { mimeType: styleImage.mimeType, data: styleImage.base64 } });
+    }
+
+    try {
+      const response = await this.ai.models.generateContent({
+        model: model,
+        contents: { parts: contents },
+        config: config
+      });
+      return response.text.trim();
+    } catch (error) {
+      console.error('Error calling Gemini API for MythPrompt:', error);
+      throw new Error('Failed to generate MythPrompt from Gemini API.');
+    }
+  }
+  
+  async generateMythPromptWithCoPilot(subject: string, styleImage?: { base64: string, mimeType: string }): Promise<string> {
+    const model = 'gemini-2.5-flash';
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const contents: any[] = [];
+
+    const coPilotSchema = {
+      type: Type.OBJECT,
+      properties: {
+        aiCoPilotEnabled: { type: Type.BOOLEAN },
+        framework: { type: Type.STRING, description: "Should be 'myth-prompt'" },
+        originalPrompt: { type: Type.STRING },
+        outputPrompt: { 
+          type: Type.STRING, 
+          description: "An extremely concise, expertly crafted, and optimized version of the prompt in the Black Myth: Wukong style. It should be a single paragraph that is dense with evocative keywords." 
+        },
+        cameraSettings: {
+          type: Type.OBJECT,
+          description: "An object containing the camera shots and settings automatically selected by the AI.",
+          properties: {
+             selected_shots: {
+                type: Type.ARRAY,
+                items: { type: Type.STRING },
+                description: "An array of the exact camera shot names selected by the AI that fit the Wukong aesthetic."
+             },
+             rationale: {
+                type: Type.STRING,
+                description: "A brief justification for why these specific shots were chosen for the given prompt."
+             }
+          },
+          required: ['selected_shots', 'rationale']
+        },
+        negative_prompt_analysis: {
+            type: Type.OBJECT,
+            description: "An analysis of potential negative prompts based on the optimized output prompt.",
+            properties: {
+                rationale: {
+                    type: Type.STRING,
+                    description: "A brief explanation of why these negative prompts are important for this specific output prompt."
+                },
+                negative_prompts: {
+                    type: Type.ARRAY,
+                    items: { type: Type.STRING },
+                    description: "An array of specific negative prompts to avoid common AI generation pitfalls."
+                }
+            },
+            required: ['rationale', 'negative_prompts']
+        },
+        error: { type: Type.STRING, description: "Error details if the prompt is invalid, otherwise it MUST be null." }
+      },
+      required: ['aiCoPilotEnabled', 'framework', 'originalPrompt', 'outputPrompt', 'cameraSettings', 'negative_prompt_analysis', 'error']
+    };
+    
+    const styleInstruction = styleImage 
+    ? "\n**Style Reference:** An image has been provided. You MUST analyze it and incorporate its core aesthetic (mood, color, texture) into your optimized prompt."
+    : '';
+
+    const masterPrompt = `
+You are an AI Co-pilot for MythPrompt Studio, specializing in the artistic style of the game **Black Myth: Wukong**. Your task is to analyze a user's prompt, generate an optimized, concise output prompt, and provide a negative prompt analysis.
+
+**Process:**
+1.  **Validate Input:** Analyze the user's 'originalPrompt'. If it's invalid or nonsensical, set a descriptive error message in the 'error' field and stop. Otherwise, set 'error' to null.
+2.  **Select Camera Shots:** Based on the 'originalPrompt', choose 2-4 cinematic camera shots that embody the dramatic, weighty feel of Black Myth: Wukong combat.
+3.  **Generate Rationale:** Briefly explain why you chose those shots.
+4.  **Generate Optimized Prompt:** Create a new 'outputPrompt'. This must be an extremely concise, expertly crafted version of the original, formatted as a single, dense paragraph. It should be packed with keywords related to Chinese mythology, the Wukong aesthetic (hyper-realism, painterly textures, desaturated tones), and visceral combat.
+5.  **Analyze for Negative Prompts:** Based on the final 'outputPrompt', identify potential failure modes (e.g., poor anatomy, static camera, cartoonish style). Generate a list of 3-5 specific negative prompts to counteract these issues and provide a brief rationale.
+6.  **Format Output:** Return a single JSON object that strictly adheres to the provided schema. The 'aiCoPilotEnabled' field must be true. The 'framework' field must be 'myth-prompt'. The 'originalPrompt' must be the user's provided subject.
+${styleInstruction}
+
+**User's Original Prompt:** "${subject}"
+`;
+    const config = {
+        temperature: 0.6,
+        topP: 0.95,
+        responseMimeType: "application/json",
+        responseSchema: coPilotSchema
+    };
+
+    contents.push({ text: masterPrompt });
+    if (styleImage) {
+        contents.push({ inlineData: { mimeType: styleImage.mimeType, data: styleImage.base64 } });
+    }
+
+    try {
+      const response = await this.ai.models.generateContent({
+        model: model,
+        contents: { parts: contents },
+        config: config
+      });
+      return response.text.trim();
+    } catch (error) {
+      console.error('Error calling Gemini API for MythPrompt Co-pilot:', error);
+      throw new Error('Failed to generate MythPrompt from Gemini API with Co-pilot.');
     }
   }
 

@@ -3,8 +3,9 @@ import { CommonModule } from '@angular/common';
 import { GeminiService, MotionPromptParams, PromptSection, AudioInputs, ActionPromptParams } from './services/gemini.service';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { ProGuideComponent } from './pro-guide/pro-guide.component';
+import { MythPromptComponent } from './myth-prompt/myth-prompt.component';
 
-type FrameworkType = 'cinematic' | 'articulated' | 'photoreal' | 'pro-guide' | 'logo-reveal' | 'transformation' | 'storyboard' | 'character' | 'motion' | 'action';
+type FrameworkType = 'cinematic' | 'articulated' | 'photoreal' | 'pro-guide' | 'logo-reveal' | 'transformation' | 'storyboard' | 'character' | 'motion' | 'action' | 'myth-prompt';
 export type CoPilotFramework = 'cinematic' | 'articulated' | 'photoreal';
 
 type CoPilotOutput = {
@@ -27,7 +28,7 @@ type CoPilotOutput = {
   selector: 'app-root',
   templateUrl: './app.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, ProGuideComponent]
+  imports: [CommonModule, ProGuideComponent, MythPromptComponent]
 })
 export class AppComponent {
   private readonly geminiService = inject(GeminiService);
@@ -102,6 +103,7 @@ export class AppComponent {
   audioMood = signal('');
   audioSfx = signal('');
   audioMusic = signal('');
+  concisePromptEnabled = signal(false);
 
   // Signals for Motion Framework
   motionSceneDescription = signal('');
@@ -219,6 +221,10 @@ export class AppComponent {
 
     if (this.activeFramework() === 'transformation') {
       return [{ title: 'TRANSFORMATION PROMPT', content: jsonString }];
+    }
+
+    if (this.concisePromptEnabled()) {
+      return [{ title: 'CONCISE PROMPT (1900 CHARACTERS)', content: jsonString }];
     }
 
     try {
@@ -339,25 +345,81 @@ export class AppComponent {
     this.motionPromptOutput.set(null);
     this.actionPromptOutput.set(null);
     this.showActionOptional.set(false);
+    this.concisePromptEnabled.set(false);
   }
   
   selectOutputType(type: 'video' | 'image'): void {
     this.outputType.set(type);
   }
 
+  autoResizeTextarea(event: Event): void {
+    const textarea = event.target as HTMLTextAreaElement;
+    // Reset height to allow shrinking
+    textarea.style.height = 'auto';
+    textarea.style.height = `${textarea.scrollHeight}px`;
+  }
+
   updateSubject(event: Event): void {
     const input = event.target as HTMLTextAreaElement;
     this.subject.set(input.value);
+    this.autoResizeTextarea(event);
   }
 
   updateSourceSubject(event: Event): void {
     const input = event.target as HTMLTextAreaElement;
     this.sourceSubject.set(input.value);
+    this.autoResizeTextarea(event);
   }
 
   updateTargetSubject(event: Event): void {
     const input = event.target as HTMLTextAreaElement;
     this.targetSubject.set(input.value);
+    this.autoResizeTextarea(event);
+  }
+
+  updateStoryboardScene(event: Event): void {
+    this.storyboardScene.set((event.target as HTMLTextAreaElement).value);
+    this.autoResizeTextarea(event);
+  }
+
+  updateCharacterDescription(event: Event): void {
+    this.characterDescription.set((event.target as HTMLTextAreaElement).value);
+    this.autoResizeTextarea(event);
+  }
+
+  updateMotionSceneDescription(event: Event): void {
+    this.motionSceneDescription.set((event.target as HTMLTextAreaElement).value);
+    this.autoResizeTextarea(event);
+  }
+
+  updateRefinementInstruction(event: Event): void {
+    this.refinementInstruction.set((event.target as HTMLTextAreaElement).value);
+    this.autoResizeTextarea(event);
+  }
+  
+  updateActionNarrativeCoreGoal(event: Event): void {
+    this.actionNarrativeCoreGoal.set((event.target as HTMLTextAreaElement).value);
+    this.autoResizeTextarea(event);
+  }
+
+  updateActionNarrativeCoreStakes(event: Event): void {
+    this.actionNarrativeCoreStakes.set((event.target as HTMLTextAreaElement).value);
+    this.autoResizeTextarea(event);
+  }
+
+  updateActionNarrativeCoreConsequence(event: Event): void {
+    this.actionNarrativeCoreConsequence.set((event.target as HTMLTextAreaElement).value);
+    this.autoResizeTextarea(event);
+  }
+
+  updateActionRelationship(event: Event): void {
+    this.actionRelationship.set((event.target as HTMLTextAreaElement).value);
+    this.autoResizeTextarea(event);
+  }
+
+  updateActionTechnicalNotes(event: Event): void {
+    this.actionTechnicalNotes.set((event.target as HTMLTextAreaElement).value);
+    this.autoResizeTextarea(event);
   }
   
   private clearWorkspace(): void {
@@ -432,13 +494,14 @@ export class AppComponent {
           }
 
           let promptGenerator: Promise<string> | undefined;
+          const concise = this.concisePromptEnabled();
 
           if (activeFramework === 'cinematic') {
-            promptGenerator = this.geminiService.generateCinematicPrompt(subject, outputType, cameraShots, format, styleImage, audioInputs);
+            promptGenerator = this.geminiService.generateCinematicPrompt(subject, outputType, cameraShots, format, styleImage, audioInputs, concise);
           } else if (activeFramework === 'articulated') {
-            promptGenerator = this.geminiService.generateArticulatedPrompt(subject, outputType, cameraShots, format, styleImage, audioInputs);
+            promptGenerator = this.geminiService.generateArticulatedPrompt(subject, outputType, cameraShots, format, styleImage, audioInputs, concise);
           } else if (activeFramework === 'photoreal') {
-            promptGenerator = this.geminiService.generatePhotorealPrompt(subject, outputType, cameraShots, format, styleImage, audioInputs);
+            promptGenerator = this.geminiService.generatePhotorealPrompt(subject, outputType, cameraShots, format, styleImage, audioInputs, concise);
           }
           
           if (promptGenerator) {
@@ -843,7 +906,7 @@ export class AppComponent {
               textToCopy = this.coPilotJson();
             }
         } else {
-            if (this.promptFormat() === 'text' || this.outputViewMode() === 'text') {
+            if (this.concisePromptEnabled() || this.promptFormat() === 'text' || this.outputViewMode() === 'text') {
                 textToCopy = this.promptSections().map(s => `${s.title}:\n${s.content}`).join('\n\n');
             } else {
                 textToCopy = this.jsonPrompt();

@@ -1,0 +1,226 @@
+<div class="animate-[fadeIn_0.5s_ease-in-out] space-y-8 text-gray-300 font-sans">
+  <header class="text-center mb-8">
+    <h1 class="text-4xl sm:text-5xl font-bold text-white mb-2" style="font-family: 'Cormorant Garamond', serif; color: #f0e68c;">
+      MythPrompt Studio
+    </h1>
+    <p class="text-lg text-gray-400">
+      Generate automated, Black Myth: Wukong-style video prompts from a single idea.
+    </p>
+  </header>
+
+  <!-- Redesigned Input Section -->
+  <div class="space-y-8">
+    <!-- Main Input Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
+      
+      <!-- Left Column: Core Idea -->
+      <div class="lg:col-span-3">
+        <div class="p-6 bg-gray-800/50 rounded-xl border border-gray-700 shadow-lg h-full flex flex-col">
+          <label for="subject" class="block text-xl font-semibold text-yellow-300 mb-3">1. Describe Your Core Idea</label>
+          <p class="text-sm text-gray-400 mb-4">Start with a simple concept. The AI will expand it into a full cinematic prompt in the Wukong style.</p>
+          <textarea 
+              id="subject"
+              [value]="subject()"
+              (input)="updateSubject($event)"
+              placeholder="e.g., a lone warrior facing a giant stone demon, a silent monk discovering a cursed scroll..."
+              class="w-full p-4 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition duration-200 flex-grow overflow-hidden"
+              rows="2"
+          ></textarea>
+        </div>
+      </div>
+
+      <!-- Right Column: Infusion & Controls -->
+      <div class="lg:col-span-2 space-y-6">
+        <div class="p-6 bg-gray-800/50 rounded-xl border border-gray-700 shadow-lg">
+          <label for="style-upload" class="block text-xl font-semibold text-yellow-300 mb-3">2. Infuse a Style <span class="text-base font-normal text-gray-400">(Optional)</span></label>
+          <p class="text-sm text-gray-400 mb-4">Upload a reference image to guide the AI's aesthetic, color, and mood.</p>
+          <label for="style-upload" class="flex flex-col items-center justify-center w-full h-full min-h-[150px] border-2 border-gray-600 border-dashed rounded-lg cursor-pointer bg-gray-800 hover:bg-gray-700/50 transition-colors">
+              @if (styleReferenceImagePreview()) {
+                  <img [src]="styleReferenceImagePreview()" alt="Style Preview" class="max-h-40 object-contain p-2 rounded-lg">
+              } @else {
+                  <div class="flex flex-col items-center justify-center text-center p-2">
+                      <svg class="w-10 h-10 mb-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14"></path></svg>
+                      <p class="text-sm text-gray-400"><span class="font-semibold">Click to upload</span> or drag & drop</p>
+                      <p class="text-xs text-gray-500">PNG, JPG, WEBP (MAX 5MB)</p>
+                  </div>
+              }
+              <input id="style-upload" type="file" class="hidden" (change)="onStyleFileSelected($event)" accept="image/png, image/jpeg, image/webp">
+          </label>
+        </div>
+        
+        <div class="p-6 bg-gray-800/50 rounded-xl border border-gray-700 shadow-lg">
+          <h3 class="text-xl font-semibold text-yellow-300 mb-4">3. Set Generation Mode</h3>
+          <div class="space-y-4">
+              <label for="copilot-toggle-myth" class="flex items-center justify-between cursor-pointer w-full">
+                <span class="flex-col">
+                  <span class="font-medium text-gray-200">AI Co-pilot</span>
+                  <span class="text-xs text-gray-400 block">Let AI optimize the prompt for you.</span>
+                </span>
+                <div class="relative">
+                  <input type="checkbox" id="copilot-toggle-myth" class="sr-only" [checked]="aiCoPilotEnabled()" (change)="aiCoPilotEnabled.set($any($event.target).checked)">
+                  <div class="block w-14 h-8 rounded-full transition-colors" [class.bg-yellow-600]="aiCoPilotEnabled()" [class.bg-gray-600]="!aiCoPilotEnabled()"></div>
+                  <div class="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform" [class.translate-x-6]="aiCoPilotEnabled()"></div>
+                </div>
+              </label>
+              <label for="concise-toggle-myth" class="flex items-center justify-between cursor-pointer w-full">
+                <span class="flex-col">
+                  <span class="font-medium text-gray-200">Concise Prompt</span>
+                  <span class="text-xs text-gray-400 block">Generate a single paragraph (1900 chars).</span>
+                </span>
+                <div class="relative">
+                  <input type="checkbox" id="concise-toggle-myth" class="sr-only" [checked]="concisePromptEnabled()" (change)="concisePromptEnabled.set($any($event.target).checked)" [disabled]="aiCoPilotEnabled()">
+                  <div class="block w-14 h-8 rounded-full transition-colors" [class.bg-yellow-600]="concisePromptEnabled()" [class.bg-gray-600]="!concisePromptEnabled()" [class.cursor-not-allowed]="aiCoPilotEnabled()" [class.opacity-50]="aiCoPilotEnabled()"></div>
+                  <div class="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform" [class.translate-x-6]="concisePromptEnabled()"></div>
+                </div>
+              </label>
+              @if(aiCoPilotEnabled()) {
+                <div class="mt-4 text-sm text-yellow-300/80 bg-yellow-900/20 p-3 rounded-lg border border-yellow-800/50">
+                  <p><strong>AI Co-pilot is active.</strong> It will generate a highly optimized prompt and provide a technical analysis.</p>
+                </div>
+              }
+            </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Generate Button -->
+    <div class="text-center">
+      <button 
+          (click)="onGenerate()"
+          [disabled]="isLoading() || !subject().trim()"
+          class="flex w-full sm:w-auto sm:mx-auto items-center justify-center px-12 py-4 bg-yellow-600 text-gray-900 text-lg font-semibold rounded-lg hover:bg-yellow-500 disabled:bg-yellow-800 disabled:cursor-not-allowed disabled:text-gray-400 transition duration-200 shadow-lg shadow-yellow-900/50 transform hover:scale-105 active:scale-100 focus:outline-none focus:ring-4 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-gray-900">
+          @if (isLoading()) {
+          <svg class="animate-spin -ml-1 mr-3 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span>Generating...</span>
+          } @else {
+          <span>Generate Mythic Prompt</span>
+          }
+      </button>
+    </div>
+  </div>
+
+  <!-- Output Section -->
+  <div class="w-full space-y-8 mt-12">
+    @if (isLoading()) {
+      <div class="text-center p-8">
+        <div class="flex justify-center items-center space-x-2">
+          <div class="w-4 h-4 rounded-full bg-yellow-400 animate-pulse [animation-delay:-0.3s]"></div>
+          <div class="w-4 h-4 rounded-full bg-yellow-400 animate-pulse [animation-delay:-0.15s]"></div>
+          <div class="w-4 h-4 rounded-full bg-yellow-400 animate-pulse"></div>
+        </div>
+        <p class="mt-4 text-gray-400">The AI is crafting your prompt...</p>
+      </div>
+    }
+
+    @if (error()) {
+      <div class="bg-red-900/50 border border-red-700 text-red-300 px-4 py-3 rounded-lg" role="alert">
+        <strong class="font-bold">Error: </strong>
+        <span class="block sm:inline">{{ error() }}</span>
+      </div>
+    }
+
+    @if (coPilotOutput()) {
+      @let parsed = parsedCoPilotOutput();
+      <div class="bg-gray-800/50 rounded-xl border border-gray-700 shadow-lg relative">
+        <div class="p-6 sm:p-8">
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+            <h2 class="text-2xl font-bold text-white">AI Co-pilot Analysis</h2>
+            <button (click)="copyToClipboard()" 
+              class="px-4 py-2 bg-gray-700 text-gray-300 font-semibold rounded-lg hover:bg-gray-600 transition duration-200 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                {{ copyButtonText() }}
+            </button>
+          </div>
+          
+          @if (parsed) {
+            <!-- Rich JSON view -->
+            <div class="space-y-6">
+              <div>
+                <h3 class="text-lg font-semibold text-yellow-300">Optimized Prompt</h3>
+                <p class="mt-1 text-gray-300 bg-gray-900 p-3 rounded-md border border-gray-700 whitespace-pre-wrap">{{ parsed.outputPrompt }}</p>
+              </div>
+              <div>
+                <h3 class="text-lg font-semibold text-yellow-300">Selected Camera Shots</h3>
+                <p class="mt-1 text-sm text-gray-400 italic">{{ parsed.cameraSettings.rationale }}</p>
+                <ul class="mt-2 list-disc list-inside space-y-1 pl-2">
+                  @for (shot of parsed.cameraSettings.selected_shots; track shot) {
+                    <li class="text-gray-300">{{ shot }}</li>
+                  }
+                </ul>
+              </div>
+              
+              <div class="border-t border-gray-700 pt-4">
+                  <h3 class="text-lg font-semibold text-red-300">Auto Negative Prompt Analysis</h3>
+                  <p class="mt-1 text-sm text-gray-400 italic">{{ parsed.negative_prompt_analysis.rationale }}</p>
+                  <div class="mt-2 bg-red-900/20 border border-red-700/50 p-3 rounded-md">
+                    <ul class="list-disc list-inside space-y-1 pl-2">
+                      @for (neg of parsed.negative_prompt_analysis.negative_prompts; track neg) {
+                        <li class="text-red-200">{{ neg }}</li>
+                      }
+                    </ul>
+                  </div>
+              </div>
+            </div>
+          } @else {
+            <pre class="bg-gray-900 p-4 rounded-lg overflow-x-auto border border-gray-700"><code class="text-sm text-gray-300 whitespace-pre-wrap">{{ coPilotOutput() }}</code></pre>
+          }
+        </div>
+      </div>
+    } @else if (promptSections().length > 0) {
+      <div class="bg-gray-800/50 rounded-xl border border-gray-700 shadow-lg relative">
+        <div class="p-6 sm:p-8">
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+            <h2 class="text-2xl font-bold text-white">Your Mythic Prompt</h2>
+            <div class="flex items-center gap-2 sm:gap-4 self-end sm:self-center">
+                @if (!concisePromptEnabled()) {
+                  <div class="flex items-center bg-gray-900/50 border border-gray-700 rounded-lg p-1 text-sm">
+                    <button (click)="outputViewMode.set('text')" 
+                            class="px-3 py-1 rounded-md transition-colors duration-200 focus:outline-none"
+                            [class.bg-yellow-600]="outputViewMode() === 'text'"
+                            [class.text-gray-900]="outputViewMode() === 'text'"
+                            [class.text-gray-300]="outputViewMode() !== 'text'"
+                            [class.hover:bg-gray-700]="outputViewMode() !== 'text'">
+                        Text
+                    </button>
+                    <button (click)="outputViewMode.set('json')" 
+                            class="px-3 py-1 rounded-md transition-colors duration-200 focus:outline-none"
+                            [class.bg-yellow-600]="outputViewMode() === 'json'"
+                            [class.text-gray-900]="outputViewMode() === 'json'"
+                            [class.text-gray-300]="outputViewMode() !== 'json'"
+                            [class.hover:bg-gray-700]="outputViewMode() !== 'json'">
+                        JSON
+                    </button>
+                  </div>
+                }
+                <button (click)="copyToClipboard()" 
+                  class="px-4 py-2 bg-gray-700 text-gray-300 font-semibold rounded-lg hover:bg-gray-600 transition duration-200 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                    {{ copyButtonText() }}
+                </button>
+            </div>
+          </div>
+          
+          @if(concisePromptEnabled() || outputViewMode() === 'text') {
+            <div class="space-y-6">
+              @for (section of promptSections(); track section.title) {
+                <div class="border-l-4 pl-4"
+                  [class.border-yellow-500]="section.title !== 'NEGATIVE PROMPT'"
+                  [class.border-red-500]="section.title === 'NEGATIVE PROMPT'">
+                  <h3 class="text-lg font-semibold"
+                    [class.text-yellow-300]="section.title !== 'NEGATIVE PROMPT'"
+                    [class.text-red-300]="section.title === 'NEGATIVE PROMPT'">
+                    {{ section.title }}
+                  </h3>
+                  <p class="text-gray-300 whitespace-pre-wrap">{{ section.content }}</p>
+                </div>
+              }
+            </div>
+          } @else {
+            <pre class="bg-gray-900 p-4 rounded-lg overflow-x-auto border border-gray-700"><code class="text-sm text-gray-300 whitespace-pre-wrap">{{ jsonPrompt() }}</code></pre>
+          }
+        </div>
+      </div>
+    }
+  </div>
+</div>

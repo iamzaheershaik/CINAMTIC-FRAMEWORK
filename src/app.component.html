@@ -103,11 +103,21 @@
         [class.hover:text-gray-200]="activeFramework() !== 'pro-guide'">
         PRO GUIDE
       </button>
+      <button 
+        (click)="selectFramework('myth-prompt')"
+        class="flex-shrink-0 md:w-full text-center md:text-left py-2.5 px-4 rounded-lg focus:outline-none font-medium transition-colors duration-200 text-sm sm:text-base whitespace-nowrap"
+        [class.bg-yellow-600]="activeFramework() === 'myth-prompt'"
+        [class.text-gray-900]="activeFramework() === 'myth-prompt'"
+        [class.text-gray-400]="activeFramework() !== 'myth-prompt'"
+        [class.hover:bg-gray-700/50]="activeFramework() !== 'myth-prompt'"
+        [class.hover:text-gray-200]="activeFramework() !== 'myth-prompt'">
+        MYTHPROMPT STUDIO
+      </button>
     </nav>
 
     <!-- Main Content Area -->
     <div class="flex-1 min-w-0">
-      @if (activeFramework() !== 'pro-guide' && activeFramework() !== 'transformation' && activeFramework() !== 'storyboard' && activeFramework() !== 'character' && activeFramework() !== 'motion' && activeFramework() !== 'action' && activeFramework() !== 'logo-reveal') {
+      @if (activeFramework() !== 'pro-guide' && activeFramework() !== 'myth-prompt' && activeFramework() !== 'transformation' && activeFramework() !== 'storyboard' && activeFramework() !== 'character' && activeFramework() !== 'motion' && activeFramework() !== 'action' && activeFramework() !== 'logo-reveal') {
         <!-- Header for Cinematic, Articulated, Photoreal -->
         <header class="text-center mb-8">
           <h1 class="text-4xl sm:text-5xl font-bold text-white mb-2">
@@ -131,6 +141,8 @@
 
       @if(activeFramework() === 'pro-guide') {
         <app-pro-guide></app-pro-guide>
+      } @else if (activeFramework() === 'myth-prompt') {
+        <app-myth-prompt></app-myth-prompt>
       } @else if (activeFramework() === 'logo-reveal') {
         <!-- Logo Reveal UI -->
         <header class="text-center mb-8">
@@ -239,8 +251,8 @@
                   [value]="sourceSubject()"
                   (input)="updateSourceSubject($event)"
                   placeholder="e.g., A man in a business suit..."
-                  class="w-full p-4 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition duration-200 h-32 resize-y"
-                  rows="4"
+                  class="w-full p-4 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition duration-200 overflow-hidden"
+                  rows="2"
                 ></textarea>
               </div>
               <!-- Target Subject -->
@@ -251,8 +263,8 @@
                   [value]="targetSubject()"
                   (input)="updateTargetSubject($event)"
                   placeholder="e.g., ...transforms into a powerful cyborg warrior."
-                  class="w-full p-4 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition duration-200 h-32 resize-y"
-                  rows="4"
+                  class="w-full p-4 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition duration-200 overflow-hidden"
+                  rows="2"
                 ></textarea>
               </div>
             </div>
@@ -322,10 +334,10 @@
             <label for="storyboard-scene" class="block text-lg font-medium text-purple-300 mb-3">Scene Description</label>
             <textarea id="storyboard-scene"
               [value]="storyboardScene()"
-              (input)="storyboardScene.set($any($event.target).value)"
+              (input)="updateStoryboardScene($event)"
               placeholder="e.g., A detective finds a mysterious clue in a rain-soaked alley at night."
-              class="w-full p-4 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition duration-200 h-32 resize-y"
-              rows="4"
+              class="w-full p-4 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition duration-200 overflow-hidden"
+              rows="2"
             ></textarea>
             <div class="text-center pt-2">
               <button (click)="onGenerateStoryboard()"
@@ -362,10 +374,10 @@
             <label for="character-description" class="block text-lg font-medium text-purple-300 mb-3">Character Description</label>
             <textarea id="character-description"
               [value]="characterDescription()"
-              (input)="characterDescription.set($any($event.target).value)"
+              (input)="updateCharacterDescription($event)"
               placeholder="e.g., A grizzled space marine with a cybernetic arm and a sarcastic attitude."
-              class="w-full p-4 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition duration-200 h-32 resize-y"
-              rows="4"
+              class="w-full p-4 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition duration-200 overflow-hidden"
+              rows="2"
             ></textarea>
             <div class="text-center pt-2">
               <button (click)="onGenerateCharacterPacket()"
@@ -403,9 +415,9 @@
               <section>
                 <h3 class="text-xl font-bold text-purple-300 border-b border-purple-800/50 pb-2 mb-4">Narrative Core (Mandatory)</h3>
                 <div class="grid md:grid-cols-3 gap-6">
-                  <div><label class="block text-sm font-medium text-gray-300 mb-2">Goal</label><textarea [value]="actionNarrativeCoreGoal()" (input)="actionNarrativeCoreGoal.set($any($event.target).value)" rows="4" class="w-full bg-gray-800 border-gray-600 rounded-md p-2 text-sm text-white placeholder-gray-500 focus:ring-1 focus:ring-purple-500"></textarea></div>
-                  <div><label class="block text-sm font-medium text-gray-300 mb-2">Stakes</label><textarea [value]="actionNarrativeCoreStakes()" (input)="actionNarrativeCoreStakes.set($any($event.target).value)" rows="4" class="w-full bg-gray-800 border-gray-600 rounded-md p-2 text-sm text-white placeholder-gray-500 focus:ring-1 focus:ring-purple-500"></textarea></div>
-                  <div><label class="block text-sm font-medium text-gray-300 mb-2">Consequence</label><textarea [value]="actionNarrativeCoreConsequence()" (input)="actionNarrativeCoreConsequence.set($any($event.target).value)" rows="4" class="w-full bg-gray-800 border-gray-600 rounded-md p-2 text-sm text-white placeholder-gray-500 focus:ring-1 focus:ring-purple-500"></textarea></div>
+                  <div><label class="block text-sm font-medium text-gray-300 mb-2">Goal</label><textarea [value]="actionNarrativeCoreGoal()" (input)="updateActionNarrativeCoreGoal($event)" rows="2" class="w-full bg-gray-800 border-gray-600 rounded-md p-2 text-sm text-white placeholder-gray-500 focus:ring-1 focus:ring-purple-500 overflow-hidden"></textarea></div>
+                  <div><label class="block text-sm font-medium text-gray-300 mb-2">Stakes</label><textarea [value]="actionNarrativeCoreStakes()" (input)="updateActionNarrativeCoreStakes($event)" rows="2" class="w-full bg-gray-800 border-gray-600 rounded-md p-2 text-sm text-white placeholder-gray-500 focus:ring-1 focus:ring-purple-500 overflow-hidden"></textarea></div>
+                  <div><label class="block text-sm font-medium text-gray-300 mb-2">Consequence</label><textarea [value]="actionNarrativeCoreConsequence()" (input)="updateActionNarrativeCoreConsequence($event)" rows="2" class="w-full bg-gray-800 border-gray-600 rounded-md p-2 text-sm text-white placeholder-gray-500 focus:ring-1 focus:ring-purple-500 overflow-hidden"></textarea></div>
                 </div>
               </section>
               <section>
@@ -422,7 +434,7 @@
                     <div><label class="block text-sm font-medium text-gray-400 mb-1">Fighting Style</label><input type="text" [value]="actionAntagonistFightStyle()" (input)="actionAntagonistFightStyle.set($any($event.target).value)" class="w-full bg-gray-800 border-gray-600 rounded-md p-2 text-sm"></div>
                   </div>
                 </div>
-                <div class="mt-4"><label class="block text-sm font-medium text-gray-300 mb-2">Relationship</label><textarea [value]="actionRelationship()" (input)="actionRelationship.set($any($event.target).value)" rows="2" class="w-full bg-gray-800 border-gray-600 rounded-md p-2 text-sm text-white placeholder-gray-500 focus:ring-1 focus:ring-purple-500"></textarea></div>
+                <div class="mt-4"><label class="block text-sm font-medium text-gray-300 mb-2">Relationship</label><textarea [value]="actionRelationship()" (input)="updateActionRelationship($event)" rows="1" class="w-full bg-gray-800 border-gray-600 rounded-md p-2 text-sm text-white placeholder-gray-500 focus:ring-1 focus:ring-purple-500 overflow-hidden"></textarea></div>
               </section>
                <section>
                 <h3 class="text-xl font-bold text-purple-300 border-b border-purple-800/50 pb-2 mb-4">Environmental Context (Mandatory)</h3>
@@ -453,7 +465,7 @@
                   <div><label class="block text-sm font-medium text-gray-400 mb-1">Sound Design Notes</label><input type="text" [value]="actionSoundDesignNotes()" (input)="actionSoundDesignNotes.set($any($event.target).value)" class="w-full bg-gray-700 border-gray-600 rounded-md p-2 text-sm"></div>
                 </div></section>
                 <section><h3 class="text-xl font-bold text-teal-300 border-b border-teal-800/50 pb-2 mb-4">Technical Notes</h3><div>
-                  <textarea [value]="actionTechnicalNotes()" (input)="actionTechnicalNotes.set($any($event.target).value)" rows="3" class="w-full bg-gray-700 border-gray-600 rounded-md p-2 text-sm text-white placeholder-gray-500 focus:ring-1 focus:ring-teal-500"></textarea>
+                  <textarea [value]="actionTechnicalNotes()" (input)="updateActionTechnicalNotes($event)" rows="2" class="w-full bg-gray-700 border-gray-600 rounded-md p-2 text-sm text-white placeholder-gray-500 focus:ring-1 focus:ring-teal-500 overflow-hidden"></textarea>
                 </div></section>
               </div>
             }
@@ -492,10 +504,10 @@
               <label for="motion-scene" class="block text-lg font-medium text-purple-300 mb-3">Scene Description</label>
               <textarea id="motion-scene"
                 [value]="motionSceneDescription()"
-                (input)="motionSceneDescription.set($any($event.target).value)"
+                (input)="updateMotionSceneDescription($event)"
                 placeholder="e.g., a golden retriever running through a sunlit meadow with wildflowers"
-                class="w-full p-4 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition duration-200 h-32 resize-y"
-                rows="4"
+                class="w-full p-4 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition duration-200 overflow-hidden"
+                rows="2"
               ></textarea>
             </div>
 
@@ -566,49 +578,76 @@
                     </div>
                 </div>
             </div>
-            
-            @if (selectedMotionType()) {
-              <div class="border-t border-gray-700/50 pt-4 animate-[fadeIn_0.3s_ease-in-out]">
-                <h3 class="text-lg font-medium text-teal-300 mb-4">Motion-Specific Parameters for <span class="font-bold text-teal-200">{{selectedMotionType()}}</span></h3>
-                <div class="p-4 bg-gray-900/40 border border-gray-700/60 rounded-lg">
-                  @if (selectedMotionType() === 'speed_ramp') {
-                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div><label class="block text-sm text-gray-400 mb-1">Start Speed</label><input type="text" [value]="motionSpeedRamp().start" (input)="updateMotionSpeedRamp('start', $event)" class="w-full bg-gray-700 border-gray-600 rounded-md p-2 text-sm"></div>
-                        <div><label class="block text-sm text-gray-400 mb-1">End Speed</label><input type="text" [value]="motionSpeedRamp().end" (input)="updateMotionSpeedRamp('end', $event)" class="w-full bg-gray-700 border-gray-600 rounded-md p-2 text-sm"></div>
-                        <div><label class="block text-sm text-gray-400 mb-1">Transition Point</label><input type="text" [value]="motionSpeedRamp().point" (input)="updateMotionSpeedRamp('point', $event)" class="w-full bg-gray-700 border-gray-600 rounded-md p-2 text-sm"></div>
-                        <div><label class="block text-sm text-gray-400 mb-1">Curve</label><select [value]="motionSpeedRamp().curve" (change)="updateMotionSpeedRamp('curve', $event)" class="w-full bg-gray-700 border-gray-600 rounded-md p-2 text-sm"><option>linear</option><option>ease-in</option><option>ease-out</option><option>ease-in-out</option></select></div>
-                    </div>
-                  } @else if (selectedMotionType() === 'bullet_time') {
-                    <div class="grid grid-cols-2 gap-4">
-                        <div><label class="block text-sm text-gray-400 mb-1">Camera Arc</label><input type="text" [value]="motionBulletTime().arc" (input)="updateMotionBulletTime('arc', $event)" class="w-full bg-gray-700 border-gray-600 rounded-md p-2 text-sm"></div>
-                        <div><label class="block text-sm text-gray-400 mb-1">Freeze Duration</label><input type="text" [value]="motionBulletTime().duration" (input)="updateMotionBulletTime('duration', $event)" class="w-full bg-gray-700 border-gray-600 rounded-md p-2 text-sm"></div>
-                    </div>
-                  } @else if (selectedMotionType() === 'dolly_zoom') {
-                    <div class="grid grid-cols-3 gap-4">
-                        <div><label class="block text-sm text-gray-400 mb-1">Dolly Direction</label><select [value]="motionDollyZoom().dolly" (change)="updateMotionDollyZoomDirection($event)" class="w-full bg-gray-700 border-gray-600 rounded-md p-2 text-sm"><option>in</option><option>out</option></select></div>
-                        <div><label class="block text-sm text-gray-400 mb-1">Zoom Direction</label><input type="text" [value]="motionDollyZoom().zoom" readonly class="w-full bg-gray-800 border-gray-600 rounded-md p-2 text-sm text-gray-400"></div>
-                        <div><label class="block text-sm text-gray-400 mb-1">Intensity</label><select [value]="motionDollyZoom().intensity" (change)="updateMotionDollyZoomIntensity($event)" class="w-full bg-gray-700 border-gray-600 rounded-md p-2 text-sm"><option>subtle</option><option>moderate</option><option>dramatic</option></select></div>
-                    </div>
-                  } @else if (selectedMotionType() === 'parallax_motion') {
-                    <div class="grid grid-cols-2 gap-4">
-                        <div><label class="block text-sm text-gray-400 mb-1">Layer Count</label><input type="number" [value]="motionParallax().layers" (input)="updateMotionParallaxLayers($event)" min="2" max="10" class="w-full bg-gray-700 border-gray-600 rounded-md p-2 text-sm"></div>
-                        <div><label class="block text-sm text-gray-400 mb-1">Depth Separation</label><select [value]="motionParallax().separation" (change)="updateMotionParallaxSeparation($event)" class="w-full bg-gray-700 border-gray-600 rounded-md p-2 text-sm"><option>subtle</option><option>moderate</option><option>pronounced</option></select></div>
-                    </div>
-                  } @else if (selectedMotionType() === 'tilt_shift') {
-                    <div class="grid grid-cols-2 gap-4">
-                        <div><label class="block text-sm text-gray-400 mb-1">Focal Plane Angle</label><input type="text" [value]="motionTiltShift().angle" (input)="updateMotionTiltShift('angle', $event)" class="w-full bg-gray-700 border-gray-600 rounded-md p-2 text-sm"></div>
-                        <div><label class="block text-sm text-gray-400 mb-1">Blur Intensity</label><select [value]="motionTiltShift().blur" (change)="updateMotionTiltShift('blur', $event)" class="w-full bg-gray-700 border-gray-600 rounded-md p-2 text-sm"><option>subtle</option><option>moderate</option><option>strong</option></select></div>
-                    </div>
-                  } @else {
-                    <p class="text-gray-400 text-sm">This motion type has no specific parameters.</p>
-                  }
-                </div>
+
+            @if (selectedMotionType() === 'speed_ramp') {
+              <div class="border-t border-gray-700/50 pt-4 animate-[fadeIn_0.5s_ease-in-out]">
+                  <h3 class="text-lg font-medium text-teal-300 mb-4">Speed Ramp Parameters</h3>
+                  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                      <div><label class="block text-sm font-medium text-gray-400 mb-1">Start Speed</label><input type="text" [value]="motionSpeedRamp().start" (input)="updateMotionSpeedRamp('start', $event)" class="w-full bg-gray-700 border-gray-600 rounded-md p-2 text-sm"></div>
+                      <div><label class="block text-sm font-medium text-gray-400 mb-1">End Speed</label><input type="text" [value]="motionSpeedRamp().end" (input)="updateMotionSpeedRamp('end', $event)" class="w-full bg-gray-700 border-gray-600 rounded-md p-2 text-sm"></div>
+                      <div><label class="block text-sm font-medium text-gray-400 mb-1">Ramp Point</label><input type="text" [value]="motionSpeedRamp().point" (input)="updateMotionSpeedRamp('point', $event)" class="w-full bg-gray-700 border-gray-600 rounded-md p-2 text-sm"></div>
+                      <div><label class="block text-sm font-medium text-gray-400 mb-1">Curve</label><input type="text" [value]="motionSpeedRamp().curve" (input)="updateMotionSpeedRamp('curve', $event)" class="w-full bg-gray-700 border-gray-600 rounded-md p-2 text-sm"></div>
+                  </div>
+              </div>
+            }
+             @if (selectedMotionType() === 'bullet_time') {
+              <div class="border-t border-gray-700/50 pt-4 animate-[fadeIn_0.5s_ease-in-out]">
+                  <h3 class="text-lg font-medium text-teal-300 mb-4">Bullet Time Parameters</h3>
+                  <div class="grid grid-cols-2 gap-4">
+                      <div><label class="block text-sm font-medium text-gray-400 mb-1">Camera Arc</label><input type="text" [value]="motionBulletTime().arc" (input)="updateMotionBulletTime('arc', $event)" class="w-full bg-gray-700 border-gray-600 rounded-md p-2 text-sm"></div>
+                      <div><label class="block text-sm font-medium text-gray-400 mb-1">Freeze Duration</label><input type="text" [value]="motionBulletTime().duration" (input)="updateMotionBulletTime('duration', $event)" class="w-full bg-gray-700 border-gray-600 rounded-md p-2 text-sm"></div>
+                  </div>
+              </div>
+            }
+             @if (selectedMotionType() === 'dolly_zoom') {
+              <div class="border-t border-gray-700/50 pt-4 animate-[fadeIn_0.5s_ease-in-out]">
+                  <h3 class="text-lg font-medium text-teal-300 mb-4">Dolly Zoom Parameters</h3>
+                  <div class="grid grid-cols-2 gap-4">
+                      <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1">Direction</label>
+                        <select [value]="motionDollyZoom().dolly" (change)="updateMotionDollyZoomDirection($event)" class="w-full bg-gray-700 border-gray-600 rounded-md p-2 text-sm text-white focus:ring-1 focus:ring-teal-500">
+                          <option value="in">Dolly In / Zoom Out</option>
+                          <option value="out">Dolly Out / Zoom In</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1">Intensity</label>
+                        <select [value]="motionDollyZoom().intensity" (change)="updateMotionDollyZoomIntensity($event)" class="w-full bg-gray-700 border-gray-600 rounded-md p-2 text-sm text-white focus:ring-1 focus:ring-teal-500">
+                          <option>subtle</option><option>moderate</option><option>dramatic</option>
+                        </select>
+                      </div>
+                  </div>
+              </div>
+            }
+             @if (selectedMotionType() === 'parallax_motion') {
+              <div class="border-t border-gray-700/50 pt-4 animate-[fadeIn_0.5s_ease-in-out]">
+                  <h3 class="text-lg font-medium text-teal-300 mb-4">Parallax Motion Parameters</h3>
+                  <div class="grid grid-cols-2 gap-4">
+                      <div><label class="block text-sm font-medium text-gray-400 mb-1">Layers</label><input type="range" min="2" max="10" [value]="motionParallax().layers" (input)="updateMotionParallaxLayers($event)" class="w-full"></div>
+                      <div><label class="block text-sm font-medium text-gray-400 mb-1">Separation</label>
+                        <select [value]="motionParallax().separation" (change)="updateMotionParallaxSeparation($event)" class="w-full bg-gray-700 border-gray-600 rounded-md p-2 text-sm text-white focus:ring-1 focus:ring-teal-500">
+                          <option>subtle</option><option>moderate</option><option>deep</option>
+                        </select>
+                      </div>
+                  </div>
+              </div>
+            }
+            @if (selectedMotionType() === 'tilt_shift') {
+              <div class="border-t border-gray-700/50 pt-4 animate-[fadeIn_0.5s_ease-in-out]">
+                  <h3 class="text-lg font-medium text-teal-300 mb-4">Tilt-Shift Parameters</h3>
+                  <div class="grid grid-cols-2 gap-4">
+                      <div><label class="block text-sm font-medium text-gray-400 mb-1">Focal Plane Angle</label><input type="text" [value]="motionTiltShift().angle" (input)="updateMotionTiltShift('angle', $event)" class="w-full bg-gray-700 border-gray-600 rounded-md p-2 text-sm"></div>
+                      <div><label class="block text-sm font-medium text-gray-400 mb-1">Blur Intensity</label>
+                        <select [value]="motionTiltShift().blur" (change)="updateMotionTiltShift('blur', $event)" class="w-full bg-gray-700 border-gray-600 rounded-md p-2 text-sm text-white focus:ring-1 focus:ring-teal-500">
+                          <option>light</option><option>moderate</option><option>strong</option>
+                        </select>
+                      </div>
+                  </div>
               </div>
             }
 
             <div class="text-center pt-4">
-              <button 
-                (click)="onGenerateMotionPrompt()"
+              <button (click)="onGenerateMotionPrompt()"
                 [disabled]="isLoading() || !motionSceneDescription().trim() || !selectedMotionType()"
                 class="flex items-center mx-auto justify-center px-8 py-4 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 disabled:bg-purple-800 disabled:cursor-not-allowed disabled:text-gray-400 transition duration-200 shadow-md transform hover:scale-105 active:scale-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-gray-900">
                 @if (isLoading()) {
@@ -620,7 +659,7 @@
               </button>
             </div>
           </div>
-
+          
           @if (isLoading()) {
             <div class="text-center p-8"><div class="flex justify-center items-center space-x-2"><div class="w-4 h-4 rounded-full bg-purple-400 animate-pulse [animation-delay:-0.3s]"></div><div class="w-4 h-4 rounded-full bg-purple-400 animate-pulse [animation-delay:-0.15s]"></div><div class="w-4 h-4 rounded-full bg-purple-400 animate-pulse"></div></div><p class="mt-4 text-gray-400">The AI is crafting your motion prompt...</p></div>
           }
@@ -632,63 +671,93 @@
           }
         </div>
       } @else {
-        <!-- Input Section -->
-        <div class="mb-8 p-6 bg-gray-800/50 rounded-xl border border-gray-700 shadow-lg">
-          
-          <div class="mb-6 flex justify-center bg-gray-900/60 rounded-lg p-1 border border-gray-700 w-fit mx-auto">
-            <button (click)="selectOutputType('video')"
-                    class="px-6 py-2 text-sm font-medium rounded-md transition-colors duration-200 focus:outline-none"
-                    [class.bg-purple-600]="outputType() === 'video'"
-                    [class.text-white]="outputType() === 'video'"
-                    [class.text-gray-300]="outputType() !== 'video'"
-                    [class.hover:bg-gray-700]="outputType() !== 'video'">
-                Video Prompt
-            </button>
-            <button (click)="selectOutputType('image')"
-                    class="px-6 py-2 text-sm font-medium rounded-md transition-colors duration-200 focus:outline-none"
-                    [class.bg-purple-600]="outputType() === 'image'"
-                    [class.text-white]="outputType() === 'image'"
-                    [class.text-gray-300]="outputType() !== 'image'"
-                    [class.hover:bg-gray-700]="outputType() !== 'image'">
-                Image Prompt
-            </button>
-          </div>
-          
-          <div class="flex flex-col lg:flex-row gap-6">
-              <!-- Left Column: Main Inputs -->
-              <div class="flex-1 space-y-4">
-                  <label for="subject" class="block text-lg font-medium text-purple-300">Enter your subject</label>
+          <!-- Main Input Section for Cinematic, Articulated, Photoreal -->
+          <div class="space-y-8">
+            <!-- Main Input Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
+              
+              <!-- Left Column: Core Idea -->
+              <div class="lg:col-span-3">
+                <div class="p-6 bg-gray-800/50 rounded-xl border border-gray-700 shadow-lg h-full flex flex-col">
+                  <label for="subject" class="block text-xl font-semibold text-purple-300 mb-3">1. Describe Your Core Idea</label>
+                  <p class="text-sm text-gray-400 mb-4">Start with a simple concept. The AI will expand it into a full, detailed prompt.</p>
                   <textarea 
                       id="subject"
                       [value]="subject()"
                       (input)="updateSubject($event)"
-                      placeholder="e.g., a futuristic city, a cat discovering magic, a luxury watch..."
-                      class="w-full p-4 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition duration-200 h-32 resize-y"
-                      rows="4"
+                      placeholder="e.g., a futuristic cityscape at night, a medieval knight in shining armor, a photorealistic render of a new sneaker..."
+                      class="w-full p-4 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition duration-200 flex-grow overflow-hidden"
+                      rows="2"
                   ></textarea>
+                </div>
               </div>
-              <!-- Right Column: Style Infusion -->
-              <div class="lg:w-1/3">
-                   <label for="style-upload" class="block text-lg font-medium text-purple-300 mb-3">Style Reference <span class="text-sm text-gray-400">(Optional)</span></label>
-                   <label for="style-upload" class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-600 border-dashed rounded-lg cursor-pointer bg-gray-800 hover:bg-gray-700/50 transition-colors">
+
+              <!-- Right Column: Infusion & Controls -->
+              <div class="lg:col-span-2 space-y-6">
+                <div class="p-6 bg-gray-800/50 rounded-xl border border-gray-700 shadow-lg">
+                  <label for="style-upload" class="block text-xl font-semibold text-purple-300 mb-3">2. Infuse a Style <span class="text-base font-normal text-gray-400">(Optional)</span></label>
+                  <p class="text-sm text-gray-400 mb-4">Upload a reference image to guide the AI's aesthetic, color, and mood.</p>
+                  <label for="style-upload" class="flex flex-col items-center justify-center w-full h-full min-h-[150px] border-2 border-gray-600 border-dashed rounded-lg cursor-pointer bg-gray-800 hover:bg-gray-700/50 transition-colors">
                       @if (styleReferenceImagePreview()) {
-                          <img [src]="styleReferenceImagePreview()" alt="Style Preview" class="max-h-28 object-contain p-2">
+                          <img [src]="styleReferenceImagePreview()" alt="Style Preview" class="max-h-40 object-contain p-2 rounded-lg">
                       } @else {
                           <div class="flex flex-col items-center justify-center text-center p-2">
-                              <svg class="w-8 h-8 mb-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14"></path></svg>
-                              <p class="text-xs text-gray-400"><span class="font-semibold">Upload an image</span> to infuse its style.</p>
+                              <svg class="w-10 h-10 mb-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14"></path></svg>
+                              <p class="text-sm text-gray-400"><span class="font-semibold">Click to upload</span> or drag & drop</p>
+                              <p class="text-xs text-gray-500">PNG, JPG, WEBP (MAX 5MB)</p>
                           </div>
                       }
                       <input id="style-upload" type="file" class="hidden" (change)="onStyleFileSelected($event)" accept="image/png, image/jpeg, image/webp">
                   </label>
+                </div>
+                
+                <div class="p-6 bg-gray-800/50 rounded-xl border border-gray-700 shadow-lg">
+                  <h3 class="text-xl font-semibold text-purple-300 mb-4">3. Generation Mode</h3>
+                  <div class="space-y-4">
+                      <label for="copilot-toggle" class="flex items-center justify-between cursor-pointer w-full">
+                        <span class="flex-col">
+                          <span class="font-medium text-gray-200">AI Co-pilot</span>
+                          <span class="text-xs text-gray-400 block">Let AI optimize the prompt for you.</span>
+                        </span>
+                        <div class="relative">
+                          <input type="checkbox" id="copilot-toggle" class="sr-only" [checked]="aiCoPilotEnabled()" (change)="aiCoPilotEnabled.set($any($event.target).checked)">
+                          <div class="block w-14 h-8 rounded-full transition-colors" [class.bg-purple-600]="aiCoPilotEnabled()" [class.bg-gray-600]="!aiCoPilotEnabled()"></div>
+                          <div class="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform" [class.translate-x-6]="aiCoPilotEnabled()"></div>
+                        </div>
+                      </label>
+                      <label for="concise-toggle" class="flex items-center justify-between cursor-pointer w-full">
+                        <span class="flex-col">
+                          <span class="font-medium text-gray-200">Concise Prompt</span>
+                          <span class="text-xs text-gray-400 block">Generate a single paragraph (1900 chars).</span>
+                        </span>
+                        <div class="relative">
+                          <input type="checkbox" id="concise-toggle" class="sr-only" [checked]="concisePromptEnabled()" (change)="concisePromptEnabled.set($any($event.target).checked)" [disabled]="aiCoPilotEnabled()">
+                          <div class="block w-14 h-8 rounded-full transition-colors" [class.bg-purple-600]="concisePromptEnabled()" [class.bg-gray-600]="!concisePromptEnabled()" [class.cursor-not-allowed]="aiCoPilotEnabled()" [class.opacity-50]="aiCoPilotEnabled()"></div>
+                          <div class="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform" [class.translate-x-6]="concisePromptEnabled()"></div>
+                        </div>
+                      </label>
+                      <label for="advanced-toggle" class="flex items-center justify-between cursor-pointer w-full">
+                        <span class="flex-col">
+                          <span class="font-medium text-gray-200">Manual Controls</span>
+                          <span class="text-xs text-gray-400 block">Manually add camera shots & audio.</span>
+                        </span>
+                        <div class="relative">
+                          <input type="checkbox" id="advanced-toggle" class="sr-only" [checked]="showAdvanced()" (change)="showAdvanced.set($any($event.target).checked)" [disabled]="aiCoPilotEnabled() || concisePromptEnabled()">
+                          <div class="block w-14 h-8 rounded-full transition-colors" [class.bg-purple-600]="showAdvanced()" [class.bg-gray-600]="!showAdvanced()" [class.cursor-not-allowed]="aiCoPilotEnabled() || concisePromptEnabled()" [class.opacity-50]="aiCoPilotEnabled() || concisePromptEnabled()"></div>
+                          <div class="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform" [class.translate-x-6]="showAdvanced()"></div>
+                        </div>
+                      </label>
+                    </div>
+                </div>
               </div>
-          </div>
+            </div>
 
-          <div class="mt-6 text-center">
+            <!-- Generate Button -->
+            <div class="text-center">
               <button 
                   (click)="onGenerate()"
                   [disabled]="isLoading() || !subject().trim()"
-                  class="flex items-center justify-center px-8 py-4 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 disabled:bg-purple-800 disabled:cursor-not-allowed disabled:text-gray-400 transition duration-200 shadow-md transform hover:scale-105 active:scale-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-gray-900">
+                  class="flex w-full sm:w-auto sm:mx-auto items-center justify-center px-12 py-4 bg-purple-600 text-white text-lg font-semibold rounded-lg hover:bg-purple-700 disabled:bg-purple-800 disabled:cursor-not-allowed disabled:text-gray-400 transition duration-200 shadow-lg shadow-purple-900/50 transform hover:scale-105 active:scale-100 focus:outline-none focus:ring-4 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-gray-900">
                   @if (isLoading()) {
                   <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                       <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -699,365 +768,236 @@
                   <span>Generate Prompt</span>
                   }
               </button>
-          </div>
-
-
-          <!-- Co-pilot and Advanced Controls Toggles -->
-          <div class="mt-6 flex flex-col sm:flex-row gap-4 sm:gap-8">
-            <!-- AI Co-pilot Toggle -->
-            <label for="copilot-toggle" class="flex items-center cursor-pointer w-fit">
-              <div class="relative">
-                <input type="checkbox" id="copilot-toggle" class="sr-only" 
-                      [checked]="aiCoPilotEnabled()" 
-                      (change)="aiCoPilotEnabled.set($any($event.target).checked)">
-                <div class="block w-14 h-8 rounded-full transition-colors"
-                    [class.bg-purple-600]="aiCoPilotEnabled()"
-                    [class.bg-gray-600]="!aiCoPilotEnabled()"></div>
-                <div class="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform"
-                    [class.translate-x-6]="aiCoPilotEnabled()"></div>
-              </div>
-              <div class="ml-3 text-gray-300 font-medium select-none">
-                AI Co-pilot
-              </div>
-            </label>
-
-            <!-- Manual Controls Toggle -->
-            <label for="advanced-toggle" class="flex items-center w-fit"
-                  [class.cursor-pointer]="!aiCoPilotEnabled()"
-                  [class.cursor-not-allowed]="aiCoPilotEnabled()"
-                  [class.opacity-50]="aiCoPilotEnabled()">
-              <div class="relative">
-                <input type="checkbox" id="advanced-toggle" class="sr-only" 
-                      [checked]="showAdvanced()" 
-                      (change)="showAdvanced.set($any($event.target).checked)"
-                      [disabled]="aiCoPilotEnabled()">
-                <div class="block w-14 h-8 rounded-full transition-colors"
-                    [class.bg-teal-600]="showAdvanced() && !aiCoPilotEnabled()"
-                    [class.bg-gray-600]="!showAdvanced() || aiCoPilotEnabled()"></div>
-                <div class="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform"
-                    [class.translate-x-6]="showAdvanced() && !aiCoPilotEnabled()"></div>
-              </div>
-              <div class="ml-3 text-gray-300 font-medium select-none">
-                Manual Controls
-              </div>
-            </label>
+            </div>
           </div>
           
-          <!-- Output Format Dropdown -->
-          @if(aiCoPilotEnabled() || showAdvanced()) {
-            <div class="mt-6 animate-[fadeIn_0.3s_ease-in-out]">
-              <label for="output-format" class="block text-sm font-medium text-purple-300 mb-2">Prompt Output Format</label>
-              <select id="output-format"
-                class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg focus:ring-purple-500 focus:border-purple-500 block w-full sm:w-1/3 p-2"
-                [value]="promptFormat()"
-                (change)="promptFormat.set($any($event.target).value)">
-                <option value="json">Structured JSON</option>
-                <option value="text">Simple Text</option>
-              </select>
+          <!-- Advanced Controls -->
+          @if (showAdvanced()) {
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8 animate-[fadeIn_0.5s_ease-in-out]">
+              <!-- Camera Controls -->
+              <div class="p-6 bg-gray-800/50 rounded-xl border border-gray-700 shadow-lg">
+                <h3 class="text-xl font-semibold text-teal-300 mb-4">Camera Controls</h3>
+                <div class="h-64 overflow-y-auto pr-2 space-y-3">
+                  @for (shot of cameraShots; track shot.name) {
+                    <label class="flex items-start space-x-3 p-3 bg-gray-900/40 rounded-lg hover:bg-gray-800/60 transition-colors cursor-pointer">
+                      <input type="checkbox" 
+                            class="mt-1 form-checkbox h-5 w-5 text-teal-500 bg-gray-700 border-gray-600 rounded focus:ring-teal-500 focus:ring-2"
+                            (change)="toggleCameraShot(shot.name, $event)">
+                      <span class="flex flex-col">
+                        <span class="font-medium text-gray-200">{{ shot.name }}</span>
+                        <span class="text-sm text-gray-400">{{ shot.description }}</span>
+                      </span>
+                    </label>
+                  }
+                </div>
+              </div>
+              <!-- Audio Controls -->
+              <div class="p-6 bg-gray-800/50 rounded-xl border border-gray-700 shadow-lg">
+                <h3 class="text-xl font-semibold text-teal-300 mb-4">Audio Controls</h3>
+                <div class="space-y-4">
+                  <div>
+                    <label for="audio-mood" class="block text-sm font-medium text-gray-300 mb-1">Mood</label>
+                    <input type="text" id="audio-mood" [value]="audioMood()" (input)="audioMood.set($any($event.target).value)" placeholder="e.g., tense, epic, mysterious" class="w-full bg-gray-800 border-gray-600 rounded-md p-2 text-sm text-white placeholder-gray-500 focus:ring-1 focus:ring-teal-500">
+                  </div>
+                  <div>
+                    <label for="audio-sfx" class="block text-sm font-medium text-gray-300 mb-1">Key Sound Effects</label>
+                    <input type="text" id="audio-sfx" [value]="audioSfx()" (input)="audioSfx.set($any($event.target).value)" placeholder="e.g., footsteps, distant thunder, glitch sounds" class="w-full bg-gray-800 border-gray-600 rounded-md p-2 text-sm text-white placeholder-gray-500 focus:ring-1 focus:ring-teal-500">
+                  </div>
+                  <div>
+                    <label for="audio-music" class="block text-sm font-medium text-gray-300 mb-1">Music Style</label>
+                    <input type="text" id="audio-music" [value]="audioMusic()" (input)="audioMusic.set($any($event.target).value)" placeholder="e.g., orchestral score, synthwave, ambient" class="w-full bg-gray-800 border-gray-600 rounded-md p-2 text-sm text-white placeholder-gray-500 focus:ring-1 focus:ring-teal-500">
+                  </div>
+                </div>
+              </div>
             </div>
           }
+          
+          <!-- Output Section -->
+          <div class="w-full space-y-8 mt-12">
+            @if (isLoading()) {
+              <div class="text-center p-8">
+                <div class="flex justify-center items-center space-x-2">
+                  <div class="w-4 h-4 rounded-full bg-purple-400 animate-pulse [animation-delay:-0.3s]"></div>
+                  <div class="w-4 h-4 rounded-full bg-purple-400 animate-pulse [animation-delay:-0.15s]"></div>
+                  <div class="w-4 h-4 rounded-full bg-purple-400 animate-pulse"></div>
+                </div>
+                <p class="mt-4 text-gray-400">The AI is crafting your prompt...</p>
+              </div>
+            }
 
-          @if(aiCoPilotEnabled()) {
-            <div class="mt-4 text-sm text-purple-300/80 bg-purple-900/20 p-3 rounded-lg border border-purple-800/50">
-              <p><strong>AI Co-pilot is active.</strong> It will automatically select the best camera shots and provide an optimized prompt analysis. Manual controls are disabled.</p>
-            </div>
-          }
+            @if (error()) {
+              <div class="bg-red-900/50 border border-red-700 text-red-300 px-4 py-3 rounded-lg" role="alert">
+                <strong class="font-bold">Error: </strong>
+                <span class="block sm:inline">{{ error() }}</span>
+              </div>
+            }
 
-          @if(showAdvanced() && !aiCoPilotEnabled()) {
-            <div class="mt-4 border-t border-gray-700/50 pt-6 animate-[fadeIn_0.5s_ease-in-out] space-y-6">
-                <div>
-                  <h3 class="text-lg font-medium text-purple-300 mb-3">Select Camera Shots (Optional)</h3>
-                  <div class="max-h-64 overflow-y-auto p-2 pr-4 space-y-2 bg-gray-900/30 rounded-lg border border-gray-700/50">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-3">
-                      @for (shot of cameraShots; track shot.name) {
-                        <label class="flex items-start space-x-3 cursor-pointer p-2 rounded-md hover:bg-gray-700/50 transition-colors duration-150">
-                          <input type="checkbox" 
-                                class="form-checkbox flex-shrink-0 mt-0.5 h-5 w-5 text-purple-500 bg-gray-800 border-gray-600 rounded focus:ring-purple-500 focus:ring-offset-gray-900/30"
-                                [checked]="selectedCameraShots().includes(shot.name)"
-                                (change)="toggleCameraShot(shot.name, $event)">
-                          <div>
-                            <span class="font-semibold text-white">{{ shot.name }}</span>
-                            <p class="text-xs text-gray-400 leading-snug">{{ shot.description }}</p>
+            @if (coPilotOutput()) {
+              @let parsed = parsedCoPilotOutput();
+              <div class="bg-gray-800/50 rounded-xl border border-gray-700 shadow-lg relative">
+                <div class="p-6 sm:p-8">
+                  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                    <h2 class="text-2xl font-bold text-white">AI Co-pilot Analysis</h2>
+                    <button (click)="copyToClipboard()" 
+                      class="px-4 py-2 bg-gray-700 text-gray-300 font-semibold rounded-lg hover:bg-gray-600 transition duration-200 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+                        {{ copyButtonText() }}
+                    </button>
+                  </div>
+                  
+                  @if (parsed) {
+                    <!-- Rich JSON view -->
+                    <div class="space-y-6">
+                      <div>
+                        <h3 class="text-lg font-semibold text-purple-300">Optimized Prompt</h3>
+                        <p class="mt-1 text-gray-300 bg-gray-900 p-3 rounded-md border border-gray-700 whitespace-pre-wrap">{{ parsed.outputPrompt }}</p>
+                      </div>
+                      <div>
+                        <h3 class="text-lg font-semibold text-purple-300">Selected Camera Shots</h3>
+                        <p class="mt-1 text-sm text-gray-400 italic">{{ parsed.cameraSettings.rationale }}</p>
+                        <ul class="mt-2 list-disc list-inside space-y-1 pl-2">
+                          @for (shot of parsed.cameraSettings.selected_shots; track shot) {
+                            <li class="text-gray-300">{{ shot }}</li>
+                          }
+                        </ul>
+                      </div>
+                       <div class="border-t border-gray-700 pt-4">
+                          <h3 class="text-lg font-semibold text-red-300">Auto Negative Prompt Analysis</h3>
+                          <p class="mt-1 text-sm text-gray-400 italic">{{ parsed.negative_prompt_analysis.rationale }}</p>
+                          <div class="mt-2 bg-red-900/20 border border-red-700/50 p-3 rounded-md">
+                            <ul class="list-disc list-inside space-y-1 pl-2">
+                              @for (neg of parsed.negative_prompt_analysis.negative_prompts; track neg) {
+                                <li class="text-red-200">{{ neg }}</li>
+                              }
+                            </ul>
                           </div>
-                        </label>
+                      </div>
+                    </div>
+                  } @else {
+                    <pre class="bg-gray-900 p-4 rounded-lg overflow-x-auto border border-gray-700"><code class="text-sm text-gray-300 whitespace-pre-wrap">{{ coPilotOutput() }}</code></pre>
+                  }
+                </div>
+              </div>
+            } @else if (promptSections().length > 0) {
+              <div class="bg-gray-800/50 rounded-xl border border-gray-700 shadow-lg relative">
+                <div class="p-6 sm:p-8">
+                  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                    <h2 class="text-2xl font-bold text-white">Your Generated Prompt</h2>
+                    <div class="flex items-center gap-2 sm:gap-4 self-end sm:self-center">
+                        @if (!concisePromptEnabled() && promptFormat() === 'json') {
+                          <div class="flex items-center bg-gray-900/50 border border-gray-700 rounded-lg p-1 text-sm">
+                            <button (click)="outputViewMode.set('text')" 
+                                    class="px-3 py-1 rounded-md transition-colors duration-200 focus:outline-none"
+                                    [class.bg-purple-600]="outputViewMode() === 'text'"
+                                    [class.text-white]="outputViewMode() === 'text'"
+                                    [class.text-gray-300]="outputViewMode() !== 'text'"
+                                    [class.hover:bg-gray-700]="outputViewMode() !== 'text'">
+                                Text
+                            </button>
+                            <button (click)="outputViewMode.set('json')" 
+                                    class="px-3 py-1 rounded-md transition-colors duration-200 focus:outline-none"
+                                    [class.bg-purple-600]="outputViewMode() === 'json'"
+                                    [class.text-white]="outputViewMode() === 'json'"
+                                    [class.text-gray-300]="outputViewMode() !== 'json'"
+                                    [class.hover:bg-gray-700]="outputViewMode() !== 'json'">
+                                JSON
+                            </button>
+                          </div>
+                        }
+                        <button (click)="copyToClipboard()" 
+                          class="px-4 py-2 bg-gray-700 text-gray-300 font-semibold rounded-lg hover:bg-gray-600 transition duration-200 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+                            {{ copyButtonText() }}
+                        </button>
+                    </div>
+                  </div>
+                  
+                  @if(concisePromptEnabled() || outputViewMode() === 'text') {
+                    <div class="space-y-4">
+                      @for (section of activePromptSections(); track section.title) {
+                        <div class="border-l-4 border-purple-500 pl-4">
+                          <h3 class="text-lg font-semibold text-purple-300">{{ section.title }}</h3>
+                          <p class="text-gray-300 whitespace-pre-wrap">{{ section.content }}</p>
+                        </div>
                       }
                     </div>
-                  </div>
+                  } @else {
+                    <pre class="bg-gray-900 p-4 rounded-lg overflow-x-auto border border-gray-700"><code class="text-sm text-gray-300 whitespace-pre-wrap">{{ jsonPrompt() }}</code></pre>
+                  }
                 </div>
-                
-                <div>
-                  <h3 class="text-lg font-medium text-teal-300 mb-3">Audio Architecture (Optional)</h3>
-                  <div class="p-4 space-y-4 bg-gray-900/30 rounded-lg border border-gray-700/50">
-                      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                          <div>
-                              <label for="audio-mood" class="block text-sm font-medium text-gray-300 mb-1">Mood</label>
-                              <input id="audio-mood" type="text" [value]="audioMood()" (input)="audioMood.set($any($event.target).value)" placeholder="e.g., Tense, Uplifting" class="w-full bg-gray-800 border border-gray-600 rounded-md p-2 text-sm text-white placeholder-gray-500 focus:ring-1 focus:ring-teal-500">
-                          </div>
-                          <div>
-                              <label for="audio-sfx" class="block text-sm font-medium text-gray-300 mb-1">Key Sound Effects</label>
-                              <input id="audio-sfx" type="text" [value]="audioSfx()" (input)="audioSfx.set($any($event.target).value)" placeholder="e.g., Distant thunder, crackling fire" class="w-full bg-gray-800 border border-gray-600 rounded-md p-2 text-sm text-white placeholder-gray-500 focus:ring-1 focus:ring-teal-500">
-                          </div>
-                          <div>
-                              <label for="audio-music" class="block text-sm font-medium text-gray-300 mb-1">Musical Style</label>
-                              <input id="audio-music" type="text" [value]="audioMusic()" (input)="audioMusic.set($any($event.target).value)" placeholder="e.g., Minimalist synth score" class="w-full bg-gray-800 border border-gray-600 rounded-md p-2 text-sm text-white placeholder-gray-500 focus:ring-1 focus:ring-teal-500">
-                          </div>
-                      </div>
-                  </div>
-                </div>
-            </div>
-          }
-        </div>
-
-        <!-- Output Section -->
-        <div class="w-full space-y-8">
-          @if (isLoading()) {
-            <div class="text-center p-8">
-              <div class="flex justify-center items-center space-x-2">
-                <div class="w-4 h-4 rounded-full bg-purple-400 animate-pulse [animation-delay:-0.3s]"></div>
-                <div class="w-4 h-4 rounded-full bg-purple-400 animate-pulse [animation-delay:-0.15s]"></div>
-                <div class="w-4 h-4 rounded-full bg-purple-400 animate-pulse"></div>
-              </div>
-              <p class="mt-4 text-gray-400">The AI is crafting your prompt...</p>
-            </div>
-          }
-
-          @if (error()) {
-            <div class="bg-red-900/50 border border-red-700 text-red-300 px-4 py-3 rounded-lg" role="alert">
-              <strong class="font-bold">Error: </strong>
-              <span class="block sm:inline">{{ error() }}</span>
-            </div>
-          }
-
-          @if (coPilotOutput()) {
-            @let parsed = parsedCoPilotOutput();
-            <div class="bg-gray-800/50 rounded-xl border border-gray-700 shadow-lg relative">
-              <div class="p-6 sm:p-8">
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-                  <h2 class="text-2xl font-bold text-white">AI Co-pilot Analysis</h2>
-                  <div class="flex items-center gap-2 sm:gap-4 self-end sm:self-center">
-                      <button (click)="copyToClipboard()" 
-                        class="px-4 py-2 bg-gray-700 text-gray-300 font-semibold rounded-lg hover:bg-gray-600 transition duration-200 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
-                          {{ copyButtonText() }}
-                      </button>
-                  </div>
-                </div>
-                
-                @if (parsed) {
-                  <!-- Rich JSON view -->
-                  <div class="space-y-6">
-                    <div>
-                      <h3 class="text-lg font-semibold text-purple-300">Optimized Prompt</h3>
-                      <p class="mt-1 text-gray-300 bg-gray-900 p-3 rounded-md border border-gray-700 whitespace-pre-wrap">{{ parsed.outputPrompt }}</p>
-                    </div>
-                    <div>
-                      <h3 class="text-lg font-semibold text-purple-300">Selected Camera Shots</h3>
-                      <p class="mt-1 text-sm text-gray-400 italic">{{ parsed.cameraSettings.rationale }}</p>
-                      <ul class="mt-2 list-disc list-inside space-y-1 pl-2">
-                        @for (shot of parsed.cameraSettings.selected_shots; track shot) {
-                          <li class="text-gray-300">{{ shot }}</li>
-                        }
-                      </ul>
-                    </div>
-                    
-                    <div class="border-t border-gray-700 pt-4">
-                       <h3 class="text-lg font-semibold text-red-300">Auto Negative Prompt Analysis</h3>
-                       <p class="mt-1 text-sm text-gray-400 italic">{{ parsed.negative_prompt_analysis.rationale }}</p>
-                       <div class="mt-2 bg-red-900/20 border border-red-700/50 p-3 rounded-md">
-                          <ul class="list-disc list-inside space-y-1 pl-2">
-                            @for (neg of parsed.negative_prompt_analysis.negative_prompts; track neg) {
-                              <li class="text-red-200">{{ neg }}</li>
-                            }
-                          </ul>
-                       </div>
-                    </div>
-
-                  </div>
-                } @else {
-                  <!-- Fallback text/pre view -->
-                  <pre class="bg-gray-900 p-4 rounded-lg overflow-x-auto border border-gray-700"><code class="text-sm text-gray-300 whitespace-pre-wrap">{{ promptFormat() === 'json' ? coPilotJson() : coPilotOutput() }}</code></pre>
-                }
-              </div>
-            </div>
-          } @else if (promptSections().length > 0) {
-            <div class="bg-gray-800/50 rounded-xl border border-gray-700 shadow-lg relative">
-              <div class="p-6 sm:p-8">
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-                  <h2 class="text-2xl font-bold text-white">
-                    @if(activeFramework() === 'cinematic') {
-                      Your Cinematic Prompt
-                    } @else if (activeFramework() === 'articulated') {
-                      Your Articulated Animation Prompt
-                    } @else {
-                      Your Photoreal CGI Prompt
-                    }
-                  </h2>
-                  <div class="flex items-center gap-2 sm:gap-4 self-end sm:self-center">
-                      <div class="flex items-center bg-gray-900/50 border border-gray-700 rounded-lg p-1 text-sm">
-                        <button (click)="outputViewMode.set('text')" 
-                                class="px-3 py-1 rounded-md transition-colors duration-200 focus:outline-none"
-                                [class.bg-purple-600]="outputViewMode() === 'text'"
-                                [class.text-white]="outputViewMode() === 'text'"
-                                [class.text-gray-300]="outputViewMode() !== 'text'"
-                                [class.hover:bg-gray-700]="outputViewMode() !== 'text'">
-                            Text
-                        </button>
-                        <button (click)="outputViewMode.set('json')" 
-                                class="px-3 py-1 rounded-md transition-colors duration-200 focus:outline-none"
-                                [class.bg-purple-600]="outputViewMode() === 'json'"
-                                [class.text-white]="outputViewMode() === 'json'"
-                                [class.text-gray-300]="outputViewMode() !== 'json'"
-                                [class.hover:bg-gray-700]="outputViewMode() !== 'json'">
-                            JSON
-                        </button>
-                      </div>
-                      <button (click)="copyToClipboard()" 
-                        class="px-4 py-2 bg-gray-700 text-gray-300 font-semibold rounded-lg hover:bg-gray-600 transition duration-200 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
-                          {{ copyButtonText() }}
-                      </button>
-                  </div>
-                </div>
-                
-                @if(outputViewMode() === 'text') {
-                  <div class="space-y-6">
-                    @for (section of promptSections(); track section.title) {
-                      <div class="border-l-4 pl-4"
-                        [class.border-purple-500]="section.title !== 'NEGATIVE PROMPT'"
-                        [class.border-red-500]="section.title === 'NEGATIVE PROMPT'">
-                        <h3 class="text-lg font-semibold"
-                          [class.text-purple-300]="section.title !== 'NEGATIVE PROMPT'"
-                          [class.text-red-300]="section.title === 'NEGATIVE PROMPT'">
-                          {{ section.title }}
-                        </h3>
-                        <p class="text-gray-300 whitespace-pre-wrap">{{ section.content }}</p>
-                      </div>
-                    }
-                  </div>
-                } @else {
-                  <pre class="bg-gray-900 p-4 rounded-lg overflow-x-auto border border-gray-700"><code class="text-sm text-gray-300 whitespace-pre-wrap">{{ jsonPrompt() }}</code></pre>
-                }
               </div>
 
               <!-- Refinement Section -->
-              <div class="mt-6 border-t border-gray-700 pt-6 px-6 sm:px-8 pb-4">
-                  <h3 class="text-xl font-bold text-teal-300 mb-4">Refine Prompt</h3>
-                  <div class="flex flex-col sm:flex-row gap-4">
-                      <textarea 
-                          placeholder="e.g., make it night time, change the mood to mysterious..."
-                          [value]="refinementInstruction()"
-                          (input)="refinementInstruction.set($any($event.target).value)"
-                          class="flex-grow w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-teal-500 transition duration-200"
-                          rows="2"
-                      ></textarea>
-                      <button 
-                          (click)="onRefine()"
-                          [disabled]="isRefining() || !refinementInstruction().trim()"
-                          class="flex items-center justify-center px-6 py-3 bg-teal-600 text-white font-semibold rounded-lg hover:bg-teal-700 disabled:bg-teal-800 disabled:cursor-not-allowed transition">
-                          @if (isRefining()) {
-                              <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                              <span>Refining...</span>
-                          } @else {
-                              <span>Refine</span>
-                          }
-                      </button>
-                  </div>
-              </div>
-            </div>
-          }
-
-          <!-- Instant Generation Workspace -->
-          @if (activePromptSections().length > 0 && outputType() === 'image') {
-            <div class="p-6 bg-gray-800/50 rounded-xl border border-gray-700 shadow-lg space-y-8">
-              <h2 class="text-2xl font-bold text-white border-b border-gray-700 pb-4">Instant Generation Workspace</h2>
-
-              <!-- Image Generation Section -->
-              <div class="space-y-6">
-                <h3 class="text-lg font-semibold text-purple-300">Image Generation</h3>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-gray-900/40 border border-gray-700 rounded-lg">
-                  <div>
-                    <label class="block text-sm font-medium text-gray-400 mb-2">Model</label>
-                    <div class="flex bg-gray-900/60 rounded-lg p-1 border border-gray-700 w-full">
-                      <button (click)="imageModel.set('ultra')" class="flex-1 px-3 py-2 text-xs sm:text-sm font-medium rounded-md transition-colors duration-200 focus:outline-none"
-                        [class.bg-purple-600]="imageModel() === 'ultra'"
-                        [class.text-white]="imageModel() === 'ultra'"
-                        [class.text-gray-300]="imageModel() !== 'ultra'"
-                        [class.hover:bg-gray-700]="imageModel() !== 'ultra'">
-                        Imagen 4 Ultra
-                      </button>
-                      <button (click)="imageModel.set('nano')" class="flex-1 px-3 py-2 text-xs sm:text-sm font-medium rounded-md transition-colors duration-200 focus:outline-none"
-                        [class.bg-purple-600]="imageModel() === 'nano'"
-                        [class.text-white]="imageModel() === 'nano'"
-                        [class.text-gray-300]="imageModel() !== 'nano'"
-                        [class.hover:bg-gray-700]="imageModel() !== 'nano'">
-                        Nano Banana
-                      </button>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label class="block text-sm font-medium text-gray-400 mb-2">Aspect Ratio</label>
-                    <div class="grid grid-cols-5 gap-1 bg-gray-900/60 rounded-lg p-1 border border-gray-700">
-                      @for (ratio of aspectRatios; track ratio) {
-                        <button 
-                          (click)="imageAspectRatio.set(ratio)"
-                          class="px-2 py-2 text-xs sm:text-sm font-medium rounded-md transition-colors duration-200 focus:outline-none flex items-center justify-center aspect-square sm:aspect-auto"
-                          [class.bg-purple-600]="imageAspectRatio() === ratio"
-                          [class.text-white]="imageAspectRatio() === ratio"
-                          [class.text-gray-300]="imageAspectRatio() !== ratio"
-                          [class.hover:bg-gray-700]="imageAspectRatio() !== ratio">
-                          {{ ratio }}
-                        </button>
-                      }
-                    </div>
-                  </div>
-                </div>
-
+              <div class="p-6 bg-gray-800/50 rounded-xl border border-gray-700 shadow-lg">
+                <h3 class="text-xl font-semibold text-purple-300 mb-3">Refine Your Prompt</h3>
+                <p class="text-sm text-gray-400 mb-4">Provide a simple instruction to modify the generated prompt above.</p>
                 <div class="flex flex-col sm:flex-row gap-4">
-                  <button (click)="onGenerateImage()" [disabled]="isGeneratingImage()" class="flex-1 px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 disabled:bg-indigo-800 disabled:cursor-not-allowed transition duration-200">
-                    Generate Image
-                  </button>
-                  <label class="flex-1 px-6 py-3 bg-gray-700 text-white font-semibold rounded-lg hover:bg-gray-600 cursor-pointer text-center transition duration-200">
-                    Upload Reference
-                    <input type="file" (change)="onFileSelected($event)" accept="image/*" class="hidden">
-                  </label>
-                </div>
-                
-                @if (isGeneratingImage()) {
-                  <p class="text-center text-gray-400">Generating image...</p>
-                }
-                @if (imageGenerationError(); as error) {
-                  <p class="text-red-400">{{ error }}</p>
-                }
-                @if(generatedImageUrl(); as url) {
-                  <div class="p-4 bg-gray-900 rounded-lg border border-gray-700 space-y-4">
-                    <img [src]="url" alt="Generated or uploaded image" class="max-w-full h-auto mx-auto rounded-md max-h-96">
-                    
-                    <!-- Action Buttons -->
-                    <div class="flex flex-col sm:flex-row gap-4">
-                        <a [href]="url" download="generated-image.png" class="flex-1 flex items-center justify-center px-6 py-3 bg-gray-700 text-white font-semibold rounded-lg hover:bg-gray-600 cursor-pointer transition duration-200">
-                            Download Image
-                        </a>
-                        <button (click)="onUpscaleImage()" [disabled]="isUpscalingImage()" class="flex-1 flex items-center justify-center px-6 py-3 bg-pink-600 text-white font-semibold rounded-lg hover:bg-pink-700 disabled:bg-pink-800 disabled:cursor-not-allowed transition duration-200">
-                            @if (isUpscalingImage()) {
-                                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                <span>Upscaling...</span>
-                            } @else {
-                                <span>Upscale Image</span>
-                            }
-                        </button>
-                    </div>
-                    @if (upscaleImageError(); as error) {
-                        <p class="text-red-400 text-center text-sm">{{ error }}</p>
+                  <textarea 
+                    [value]="refinementInstruction()"
+                    (input)="updateRefinementInstruction($event)"
+                    placeholder="e.g., 'make the lighting more dramatic', 'change the setting to a futuristic city', 'add a sense of urgency'"
+                    class="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition duration-200 flex-grow overflow-hidden"
+                    rows="1"
+                  ></textarea>
+                  <button 
+                    (click)="onRefine()"
+                    [disabled]="isRefining() || !refinementInstruction().trim()"
+                    class="flex items-center justify-center px-6 py-2 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 disabled:bg-purple-800 disabled:cursor-not-allowed transition duration-200 flex-shrink-0">
+                    @if (isRefining()) {
+                      <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                      <span>Refining...</span>
+                    } @else {
+                      <span>Refine</span>
                     }
-                  </div>
-                }
+                  </button>
+                </div>
               </div>
-            </div>
-          }
-        </div>
+
+              <!-- Workspace Section -->
+              <div class="p-6 bg-gray-800/50 rounded-xl border border-gray-700 shadow-lg">
+                  <h2 class="text-2xl font-bold text-white mb-6">Creative Workspace</h2>
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <!-- Image Generation -->
+                      <div class="space-y-4">
+                          <h3 class="text-xl font-semibold text-teal-300">Generate a Concept Image</h3>
+                          <div class="flex flex-col sm:flex-row gap-4">
+                              <select [value]="imageAspectRatio()" (change)="imageAspectRatio.set($any($event.target).value)" class="bg-gray-700 border-gray-600 rounded-md p-2 text-sm text-white focus:ring-1 focus:ring-teal-500">
+                                  @for (ratio of aspectRatios; track ratio) {
+                                      <option [value]="ratio">Aspect {{ ratio }}</option>
+                                  }
+                              </select>
+                              <button (click)="onGenerateImage()" 
+                                      [disabled]="isGeneratingImage()"
+                                      class="flex-1 flex items-center justify-center px-4 py-2 bg-teal-600 text-white font-semibold rounded-lg hover:bg-teal-700 disabled:bg-teal-800 disabled:cursor-not-allowed transition duration-200">
+                                  @if (isGeneratingImage()) {
+                                      <svg class="animate-spin -ml-1 mr-3 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                                      <span>Generating...</span>
+                                  } @else {
+                                      <span>Generate</span>
+                                  }
+                              </button>
+                          </div>
+                          @if (imageGenerationError()) { <p class="text-sm text-red-400">{{ imageGenerationError() }}</p> }
+                      </div>
+                      <!-- Image Display and Upscaling -->
+                      <div class="space-y-4">
+                          <div class="aspect-square bg-gray-900/50 rounded-lg border border-gray-700 flex items-center justify-center overflow-hidden">
+                              @if (isGeneratingImage() || isUpscalingImage()) {
+                                <div class="flex flex-col items-center text-gray-400">
+                                    <svg class="animate-spin h-8 w-8 text-teal-400 mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                                    <span>{{ isUpscalingImage() ? 'Upscaling...' : 'Generating...' }}</span>
+                                </div>
+                              } @else if (generatedImageUrl()) {
+                                  <img [src]="generatedImageUrl()" alt="Generated Concept Image" class="w-full h-full object-contain">
+                              } @else {
+                                  <p class="text-gray-500">Image will appear here</p>
+                              }
+                          </div>
+                          <button (click)="onUpscaleImage()" [disabled]="!generatedImageUrl() || isUpscalingImage() || isGeneratingImage()" class="w-full px-4 py-2 bg-teal-600 text-white font-semibold rounded-lg hover:bg-teal-700 disabled:bg-teal-800 disabled:cursor-not-allowed transition duration-200">Upscale to 4K</button>
+                           @if (upscaleImageError()) { <p class="text-sm text-red-400">{{ upscaleImageError() }}</p> }
+                      </div>
+                  </div>
+              </div>
+            }
+          </div>
       }
     </div>
   </div>
