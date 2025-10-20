@@ -223,10 +223,6 @@ export class AppComponent {
       return [{ title: 'TRANSFORMATION PROMPT', content: jsonString }];
     }
 
-    if (this.concisePromptEnabled()) {
-      return [{ title: 'CONCISE PROMPT (1900 CHARACTERS)', content: jsonString }];
-    }
-
     try {
       const jsonObj = JSON.parse(jsonString);
       const sections: PromptSection[] = Object.entries(jsonObj).map(([key, value]) => {
@@ -494,14 +490,13 @@ export class AppComponent {
           }
 
           let promptGenerator: Promise<string> | undefined;
-          const concise = this.concisePromptEnabled();
 
           if (activeFramework === 'cinematic') {
-            promptGenerator = this.geminiService.generateCinematicPrompt(subject, outputType, cameraShots, format, styleImage, audioInputs, concise);
+            promptGenerator = this.geminiService.generateCinematicPrompt(subject, outputType, cameraShots, format, styleImage, audioInputs);
           } else if (activeFramework === 'articulated') {
-            promptGenerator = this.geminiService.generateArticulatedPrompt(subject, outputType, cameraShots, format, styleImage, audioInputs, concise);
+            promptGenerator = this.geminiService.generateArticulatedPrompt(subject, outputType, cameraShots, format, styleImage, audioInputs);
           } else if (activeFramework === 'photoreal') {
-            promptGenerator = this.geminiService.generatePhotorealPrompt(subject, outputType, cameraShots, format, styleImage, audioInputs, concise);
+            promptGenerator = this.geminiService.generatePhotorealPrompt(subject, outputType, cameraShots, format, styleImage, audioInputs);
           }
           
           if (promptGenerator) {
@@ -901,12 +896,14 @@ export class AppComponent {
         break;
       default:
         if (this.aiCoPilotEnabled()) {
-            textToCopy = this.coPilotOutput();
-            if (this.promptFormat() === 'json') {
-              textToCopy = this.coPilotJson();
+            const parsed = this.parsedCoPilotOutput();
+            if (this.concisePromptEnabled() && parsed) {
+              textToCopy = parsed.outputPrompt;
+            } else {
+              textToCopy = this.coPilotJson() ?? this.coPilotOutput();
             }
         } else {
-            if (this.concisePromptEnabled() || this.promptFormat() === 'text' || this.outputViewMode() === 'text') {
+            if (this.promptFormat() === 'text' || this.outputViewMode() === 'text') {
                 textToCopy = this.promptSections().map(s => `${s.title}:\n${s.content}`).join('\n\n');
             } else {
                 textToCopy = this.jsonPrompt();
